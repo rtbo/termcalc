@@ -1,0 +1,13 @@
+[package]
+name = "termcalc"
+version = "0.1.0"
+description = "Terminal calculator"
+edition = "2021"
+
+[lib]
+name = "tc"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "tc"
+path = "src/bin.rs"
