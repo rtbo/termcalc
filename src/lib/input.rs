@@ -12,7 +12,7 @@ pub type LineCol = (u32, u32);
 /// A cursor over an input stream of characters.
 /// It keeps track of the current position in the stream.
 /// It has the ability to put characters back into the stream.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Cursor<T> {
     // input iterator
     input: T,

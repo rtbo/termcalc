@@ -5,6 +5,7 @@ where
     PutBack::new(iter.into_iter())
 }
 
+#[derive(Debug, Clone)]
 pub struct PutBack<I>
 where
     I: Iterator,

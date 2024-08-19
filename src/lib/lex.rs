@@ -2,7 +2,7 @@ use std::num::ParseFloatError;
 
 use crate::input::{Cursor, LineCol, Pos, Span};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     InvalidChar(LineCol, char),
     InvalidNum(LineCol, String, ParseFloatError),
