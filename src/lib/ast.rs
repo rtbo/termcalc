@@ -1,4 +1,4 @@
-use crate::input::{Pos, Span};
+use crate::input::Span;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum UnOp {
@@ -12,7 +12,7 @@ pub enum BinOp {
     Sub,
     Mul,
     Div,
-    Rem,
+    Mod,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -20,7 +20,6 @@ pub struct Item {
     pub kind: ItemKind,
     pub span: Span,
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ItemKind {
@@ -36,28 +35,9 @@ pub struct Expr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprKind {
-    Num {
-        pos: Pos,
-        val: f64,
-    },
-    Var {
-        pos: Pos,
-        sym: String,
-    },
-    UnOp {
-        pos: Pos,
-        op: UnOp,
-        rhs: Box<Expr>,
-    },
-    BinOp {
-        pos: Pos,
-        op: BinOp,
-        lhs: Box<Expr>,
-        rhs: Box<Expr>,
-    },
-    Call {
-        pos: Pos,
-        sym: String,
-        args: Vec<Expr>,
-    },
+    Num(f64),
+    Var(String),
+    UnOp(UnOp, Box<Expr>),
+    BinOp(BinOp, Box<Expr>, Box<Expr>),
+    Call(String, Vec<Expr>),
 }
