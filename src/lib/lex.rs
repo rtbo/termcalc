@@ -1,4 +1,4 @@
-use std::num::ParseFloatError;
+use std::{iter::Filter, num::ParseFloatError};
 
 use crate::input::{Cursor, LineCol, Pos, Span};
 
@@ -49,7 +49,14 @@ pub enum TokenKind {
     Comment(String),
 }
 
-#[derive(Debug)]
+pub fn tokenize<I>(chars: I) -> Tokenizer<I::IntoIter>
+where
+    I: IntoIterator<Item = char>,
+{
+    Tokenizer::new(Cursor::new(chars.into_iter()))
+}
+
+#[derive(Debug, Clone)]
 pub struct Tokenizer<I> {
     cursor: Cursor<I>,
 }
@@ -64,6 +71,16 @@ impl<I> Tokenizer<I>
 where
     I: Iterator<Item = char>,
 {
+    pub fn in_band(self) -> Filter<Tokenizer<I>, fn(&Result<Token>) -> bool> {
+        self.filter(|tok| match tok {
+            Ok(Token {
+                kind: TokenKind::Comment(_) | TokenKind::Space,
+                ..
+            }) => false,
+            _ => true,
+        })
+    }
+
     fn parse_num(&mut self, pos: Pos, first: char) -> Result<f64> {
         let mut s = String::from(first);
         loop {
@@ -177,25 +194,65 @@ where
 }
 
 #[test]
-fn test_tokenizer() {
-    let c = Cursor::new("1 + 2 # a comment".chars());
-    let tokenizer = Tokenizer::new(c);
-    let tokens: Vec<_> = tokenizer
-        .collect::<Vec<Result<Token>>>()
-        .into_iter()
-        .map(|tok| tok.unwrap())
-        .map(|tok| tok.kind)
+fn test_tokenize() {
+    let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars())
+        .map(Result::unwrap)
         .collect();
     assert_eq!(
         tokens,
         vec![
-            TokenKind::Num(1.0),
-            TokenKind::Space,
-            TokenKind::Plus,
-            TokenKind::Space,
-            TokenKind::Num(2.0),
-            TokenKind::Space,
-            TokenKind::Comment(" a comment".to_string()),
+            Token{
+                span: (0, 1),
+                kind: TokenKind::Num(1.0),
+            },
+            Token{
+                span: (1, 2),
+                kind: TokenKind::Space,
+            },
+            Token{
+               span: (2, 3),
+                kind: TokenKind::Plus,
+            },
+            Token{
+                span: (3, 4),
+                kind: TokenKind::Space,
+            },
+            Token{
+                span: (4, 5),
+                kind: TokenKind::Num(2.0),
+            },
+            Token{
+                span: (5, 6),
+                kind: TokenKind::Space,
+            },
+            Token{
+                span: (6, 17),
+                kind: TokenKind::Comment(" a comment".to_string()),
+            },
+        ]
+    );
+}
+
+#[test]
+fn test_tokenize_in_band() {
+    let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars()).in_band()
+        .map(Result::unwrap)
+        .collect();
+    assert_eq!(
+        tokens,
+        vec![
+            Token{
+                span: (0, 1),
+                kind: TokenKind::Num(1.0),
+            },
+            Token{
+               span: (2, 3),
+                kind: TokenKind::Plus,
+            },
+            Token{
+                span: (4, 5),
+                kind: TokenKind::Num(2.0),
+            },
         ]
     );
 }
