@@ -2,32 +2,19 @@
 //!
 //! See `Grammar.ebnf`
 //! ```
+use std::fmt::Display;
+
 use crate::ast;
-use crate::input::Span;
+use crate::input::{HasSpan, Span};
 use crate::lex::{self, Token, TokenKind};
 use crate::util;
 
 #[derive(Debug)]
 pub enum Error {
     Lex(lex::Error),
-    UnexpectedEndOfInput,
+    UnexpectedEndOfInput(Span),
     UnexpectedToken(Token, Option<TokenKind>),
 }
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::Lex(e) => e.fmt(f),
-            Error::UnexpectedEndOfInput => write!(f, "Unexpected end of input"),
-            Error::UnexpectedToken(t, k) => match k {
-                Some(k) => write!(f, "Unexpected token: {:?} (expected {:?})", t, k),
-                None => write!(f, "Unexpected token: {:?}", t),
-            },
-        }
-    }
-}
-
-impl std::error::Error for Error {}
 
 impl From<lex::Error> for Error {
     fn from(e: lex::Error) -> Self {
@@ -35,15 +22,43 @@ impl From<lex::Error> for Error {
     }
 }
 
+impl HasSpan for Error {
+    fn span(&self) -> Span {
+        match self {
+            Error::Lex(err) => err.span(),
+            Error::UnexpectedEndOfInput(span) => *span,
+            Error::UnexpectedToken(tok, _) => tok.span,
+        }
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::Lex(err) => err.fmt(f),
+            Error::UnexpectedEndOfInput(_) => {
+                write!(f, "Unexpected end of input")
+            }
+            Error::UnexpectedToken(tok, expected) => {
+                write!(f, "Unexpected token: {:?}", tok.kind)?;
+                if let Some(expected) = expected {
+                    write!(f, " (expected {:?})", expected)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Parse the given string to produce AST items
-pub fn parse<I>(chars: I) -> impl Iterator<Item = Result<ast::Item>>
+/// Parse the given string to produce an AST item
+pub fn parse_line<I>(chars: I) -> Result<ast::Item>
 where
     I: IntoIterator<Item = char>,
 {
     let tokens = lex::tokenize(chars).in_band();
-    Parser::new(tokens).items()
+    Parser::new(tokens).parse_item()
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +67,7 @@ where
     T: Iterator<Item = lex::Result<Token>>,
 {
     tokens: util::PutBack<T>,
+    last_span: Span,
 }
 
 impl<T> Parser<T>
@@ -61,11 +77,8 @@ where
     pub fn new(tokens: T) -> Parser<T> {
         Parser {
             tokens: util::put_back(tokens),
+            last_span: (0, 0),
         }
-    }
-
-    pub fn items(self) -> Items<T> {
-        Items { inner: self }
     }
 }
 
@@ -74,7 +87,7 @@ where
     T: Iterator<Item = lex::Result<Token>>,
 {
     fn expect_kind(&mut self, kind: TokenKind) -> Result<Span> {
-        let tok = self.tokens.next().transpose()?;
+        let tok = self.next_token()?;
         if let Some(tok) = tok {
             if tok.kind == kind {
                 Ok(tok.span)
@@ -82,12 +95,13 @@ where
                 Err(Error::UnexpectedToken(tok, Some(kind)))
             }
         } else {
-            Err(Error::UnexpectedEndOfInput)
+            let span = (self.last_span.1, self.last_span.1 + 2);
+            Err(Error::UnexpectedEndOfInput(span))
         }
     }
 
     fn next_is_kind(&mut self, kind: TokenKind) -> Result<bool> {
-        let tok = self.tokens.next().transpose()?;
+        let tok = self.next_token()?;
         if let Some(tok) = tok {
             let res = tok.kind == kind;
             self.tokens.put_back(Ok(tok));
@@ -102,24 +116,23 @@ impl<T> Parser<T>
 where
     T: Iterator<Item = lex::Result<Token>>,
 {
-    fn parse_item(&mut self) -> Result<ast::Item> {
-        let mut tok = self.tokens.next().transpose()?;
-        while matches!(
-            tok,
-            Some(Token {
-                kind: TokenKind::Space,
-                ..
-            })
-        ) {
-            tok = self.tokens.next().transpose()?;
+    fn next_token(&mut self) -> Result<Option<Token>> {
+        let tok = self.tokens.next().transpose()?;
+        if let Some(tok) = &tok {
+            self.last_span = tok.span;
         }
-        match tok {
+        Ok(tok)
+    }
+
+    fn parse_item(&mut self) -> Result<ast::Item> {
+        let tok = self.next_token()?;
+        let item = match tok {
             Some(Token {
                 kind: TokenKind::Symbol(sym),
                 span,
             }) => {
                 if self.next_is_kind(TokenKind::Equal)? {
-                    self.tokens.next().transpose()?; // eat '='
+                    self.next_token()?; // eat '='
                     let expr = self.parse_expr()?;
                     let span = (span.0, expr.span.1);
                     Ok(ast::Item {
@@ -148,8 +161,13 @@ where
                     span,
                 })
             }
-            _ => todo!(),
+            None => Err(Error::UnexpectedEndOfInput(self.last_span)),
+        };
+        let tok = self.next_token()?;
+        if let Some(tok) = tok {
+            return Err(Error::UnexpectedToken(tok, Some(TokenKind::NewLine)));
         }
+        item
     }
 
     fn parse_expr(&mut self) -> Result<ast::Expr> {
@@ -158,7 +176,7 @@ where
 
     fn parse_add_expr(&mut self) -> Result<ast::Expr> {
         let lhs = self.parse_mul_expr()?;
-        let tok = self.tokens.next().transpose()?;
+        let tok = self.next_token()?;
         match tok {
             Some(Token { kind, .. }) if is_add_op(&kind) => {
                 let rhs = self.parse_mul_expr()?;
@@ -178,7 +196,7 @@ where
 
     fn parse_mul_expr(&mut self) -> Result<ast::Expr> {
         let lhs = self.parse_unary_expr()?;
-        let tok = self.tokens.next().transpose()?;
+        let tok = self.next_token()?;
         match tok {
             Some(Token { kind, .. }) if is_mul_op(&kind) => {
                 let rhs = self.parse_unary_expr()?;
@@ -197,7 +215,7 @@ where
     }
 
     fn parse_unary_expr(&mut self) -> Result<ast::Expr> {
-        let tok = self.tokens.next().transpose()?;
+        let tok = self.next_token()?;
         match tok {
             Some(Token { kind, span }) if is_un_op(&kind) => {
                 let expr = self.parse_primary()?;
@@ -217,7 +235,7 @@ where
     }
 
     fn parse_primary(&mut self) -> Result<ast::Expr> {
-        let tok = self.tokens.next().transpose()?;
+        let tok = self.next_token()?;
         match tok {
             Some(Token {
                 kind: TokenKind::Num(val),
@@ -240,37 +258,42 @@ where
             }
             Some(Token {
                 kind: TokenKind::Symbol(sym),
-                span,
+                span: symspan,
             }) => {
-                let next = self.tokens.next().transpose()?;
+                let next = self.next_token()?;
                 match next {
                     Some(Token {
                         kind: TokenKind::OpenPar,
-                        span: openspan,
+                        ..
                     }) => {
                         let args = self.parse_arg_list()?;
                         let closespan = self.expect_kind(TokenKind::ClosePar)?;
-                        let span = (openspan.0, closespan.1);
+                        let span = (symspan.0, closespan.1);
                         Ok(ast::Expr {
                             kind: ast::ExprKind::Call(sym, args),
                             span,
                         })
                     }
-                    _ => Ok(ast::Expr {
-                        kind: ast::ExprKind::Var(sym),
-                        span,
-                    }),
+                    next => {
+                        if let Some(tok) = next {
+                            self.tokens.put_back(Ok(tok));
+                        }
+                        Ok(ast::Expr {
+                            kind: ast::ExprKind::Var(sym),
+                            span: symspan,
+                        })
+                    }
                 }
             }
             Some(tok) => Err(Error::UnexpectedToken(tok, None)),
-            None => Err(Error::UnexpectedEndOfInput),
+            None => Err(Error::UnexpectedEndOfInput(self.last_span)),
         }
     }
 
     fn parse_arg_list(&mut self) -> Result<Vec<ast::Expr>> {
         let mut args = Vec::new();
         loop {
-            let tok = self.tokens.next().transpose()?;
+            let tok = self.next_token()?;
             match tok {
                 Some(Token {
                     kind: TokenKind::ClosePar,
@@ -290,10 +313,14 @@ where
                     self.tokens.put_back(Ok(tok));
                     args.push(self.parse_expr()?);
                 }
-                None => return Err(Error::UnexpectedEndOfInput),
+                None => return Err(Error::UnexpectedEndOfInput(self.eoi_span())),
             }
         }
         Ok(args)
+    }
+
+    fn eoi_span(&self) -> Span {
+        (self.last_span.1, self.last_span.1 + 1)
     }
 }
 
@@ -331,39 +358,13 @@ fn un_op(kind: &TokenKind) -> ast::UnOp {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Items<T>
-where
-    T: Iterator<Item = lex::Result<Token>>,
-{
-    inner: Parser<T>,
-}
-
-impl<T> Iterator for Items<T>
-where
-    T: Iterator<Item = lex::Result<Token>>,
-{
-    type Item = Result<ast::Item>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let tok = self.inner.tokens.next()?;
-        match tok {
-            Ok(tok) => {
-                self.inner.tokens.put_back(Ok(tok));
-                Some(self.inner.parse_item())
-            }
-            Err(err) => Some(Err(err.into())),
-        }
-    }
-}
-
 #[test]
 fn test_parse_add() {
-    let items: Vec<ast::Item> = parse("1 + 2".chars()).map(Result::unwrap).collect();
+    let item: ast::Item = parse_line("1 + 2".chars()).unwrap();
 
     assert_eq!(
-        items,
-        vec![ast::Item {
+        item,
+        ast::Item {
             span: (0, 5),
             kind: ast::ItemKind::Expr(ast::Expr {
                 span: (0, 5),
@@ -379,17 +380,17 @@ fn test_parse_add() {
                     })
                 )
             })
-        }]
+        }
     )
 }
 
 #[test]
 fn test_parse_add_mul() {
-    let items: Vec<ast::Item> = parse("1 + 2 * 3".chars()).map(Result::unwrap).collect();
+    let items: ast::Item = parse_line("1 + 2 * 3".chars()).unwrap();
 
     assert_eq!(
         items,
-        vec![ast::Item {
+        ast::Item {
             span: (0, 9),
             kind: ast::ItemKind::Expr(ast::Expr {
                 span: (0, 9),
@@ -415,17 +416,17 @@ fn test_parse_add_mul() {
                     })
                 )
             })
-        }]
+        }
     )
 }
 
 #[test]
 fn test_parse_mul_add() {
-    let items: Vec<ast::Item> = parse("1 * 2 + 3".chars()).map(Result::unwrap).collect();
+    let items: ast::Item = parse_line("1 * 2 + 3".chars()).unwrap();
 
     assert_eq!(
         items,
-        vec![ast::Item {
+        ast::Item {
             span: (0, 9),
             kind: ast::ItemKind::Expr(ast::Expr {
                 span: (0, 9),
@@ -451,35 +452,35 @@ fn test_parse_mul_add() {
                     })
                 )
             })
-        }]
+        }
     )
 }
 
 #[test]
 fn test_parse_mul_add_parentheses() {
-    let items: Vec<ast::Item> = parse("1 * (2 + 3)".chars()).map(Result::unwrap).collect();
+    let items: ast::Item = parse_line("1 * (2 + 3)".chars()).unwrap();
 
     assert_eq!(
         items,
-        vec![ast::Item {
+        ast::Item {
             span: (0, 11),
             kind: ast::ItemKind::Expr(ast::Expr {
                 span: (0, 11),
                 kind: ast::ExprKind::BinOp(
                     ast::BinOp::Mul,
-                    Box::new(ast::Expr{
+                    Box::new(ast::Expr {
                         span: (0, 1),
                         kind: ast::ExprKind::Num(1.0),
-                    } ),
-                    Box::new(ast::Expr{
+                    }),
+                    Box::new(ast::Expr {
                         span: (4, 11),
                         kind: ast::ExprKind::BinOp(
                             ast::BinOp::Add,
-                            Box::new(ast::Expr{
+                            Box::new(ast::Expr {
                                 span: (5, 6),
                                 kind: ast::ExprKind::Num(2.0),
                             }),
-                            Box::new(ast::Expr{
+                            Box::new(ast::Expr {
                                 span: (9, 10),
                                 kind: ast::ExprKind::Num(3.0),
                             })
@@ -487,6 +488,33 @@ fn test_parse_mul_add_parentheses() {
                     })
                 )
             })
-        }]
+        }
     )
+}
+
+#[test]
+fn test_sin_pi() {
+    let item: ast::Item = parse_line("sin(pi)".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 7),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 7),
+                kind: ast::ExprKind::Call(
+                    "sin".to_string(),
+                    vec![ast::Expr {
+                        span: (4, 6),
+                        kind: ast::ExprKind::Var("pi".to_string(),)
+                    }]
+                )
+            })
+        }
+    )
+}
+
+#[test]
+fn fail_test_14_eq_12() {
+    assert!(parse_line("14 = 12".chars()).is_err());
 }

@@ -6,8 +6,9 @@ pub type Pos = u32;
 /// (first pos, one past last pos)
 pub type Span = (Pos, Pos);
 
-/// Line and Column position in to an input stream.
-pub type LineCol = (u32, u32);
+pub trait HasSpan {
+    fn span(&self) -> Span;
+}
 
 /// A cursor over an input stream of characters.
 /// It keeps track of the current position in the stream.
@@ -55,16 +56,6 @@ impl<T> Cursor<T> {
             }
             _ => (),
         }
-    }
-
-    pub fn line_col(&self, pos: u32) -> LineCol {
-        let mut line = 1;
-        for p in &self.nl_pos {
-            if *p < pos {
-                line += 1;
-            }
-        }
-        (line, 1 + pos - self.nl_pos.iter().nth(line as usize - 1).unwrap_or(&0))
     }
 }
 

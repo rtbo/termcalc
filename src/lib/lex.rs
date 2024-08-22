@@ -1,27 +1,34 @@
-use std::{iter::Filter, num::ParseFloatError};
+use std::{fmt::Display, iter::Filter, num::ParseFloatError};
 
-use crate::input::{Cursor, LineCol, Pos, Span};
+use crate::input::{Cursor, HasSpan, Pos, Span};
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    InvalidChar(LineCol, char),
-    InvalidNum(LineCol, String, ParseFloatError),
+    InvalidChar(Span, char),
+    InvalidNum(Span, String, ParseFloatError),
 }
 
-impl std::fmt::Display for Error {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::InvalidChar((line, col), c) => {
-                write!(f, "Invalid character '{}' at {}:{}", c, line, col)
+            Error::InvalidChar(_, c) => {
+                write!(f, "Invalid character: {c}")
             }
-            Error::InvalidNum((line, col), s, e) => {
-                write!(f, "Invalid number '{}' ({}) at {}:{}", s, e, line, col)
+            Error::InvalidNum(_, s, err) => {
+                write!(f, "Invalid number: {s}: {err}")
             }
         }
     }
 }
 
-impl std::error::Error for Error {}
+impl HasSpan for Error {
+    fn span(&self) -> Span {
+        match self {
+            Error::InvalidChar(span, _) => *span,
+            Error::InvalidNum(span, _, _) => *span,
+        }
+    }
+}
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -96,7 +103,7 @@ where
         }
         match s.parse::<f64>() {
             Ok(n) => Ok(n),
-            Err(err) => Err(Error::InvalidNum(self.cursor.line_col(pos), s, err)),
+            Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
         }
     }
 
@@ -166,7 +173,7 @@ where
                 }
                 TokenKind::Space
             }
-            _ => return Err(Error::InvalidChar(self.cursor.line_col(pos), c)),
+            _ => return Err(Error::InvalidChar((pos, pos+1), c)),
         };
         Ok(Some(kind))
     }
@@ -201,31 +208,31 @@ fn test_tokenize() {
     assert_eq!(
         tokens,
         vec![
-            Token{
+            Token {
                 span: (0, 1),
                 kind: TokenKind::Num(1.0),
             },
-            Token{
+            Token {
                 span: (1, 2),
                 kind: TokenKind::Space,
             },
-            Token{
-               span: (2, 3),
+            Token {
+                span: (2, 3),
                 kind: TokenKind::Plus,
             },
-            Token{
+            Token {
                 span: (3, 4),
                 kind: TokenKind::Space,
             },
-            Token{
+            Token {
                 span: (4, 5),
                 kind: TokenKind::Num(2.0),
             },
-            Token{
+            Token {
                 span: (5, 6),
                 kind: TokenKind::Space,
             },
-            Token{
+            Token {
                 span: (6, 17),
                 kind: TokenKind::Comment(" a comment".to_string()),
             },
@@ -235,23 +242,52 @@ fn test_tokenize() {
 
 #[test]
 fn test_tokenize_in_band() {
-    let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars()).in_band()
+    let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars())
+        .in_band()
         .map(Result::unwrap)
         .collect();
     assert_eq!(
         tokens,
         vec![
-            Token{
+            Token {
                 span: (0, 1),
                 kind: TokenKind::Num(1.0),
             },
-            Token{
-               span: (2, 3),
+            Token {
+                span: (2, 3),
                 kind: TokenKind::Plus,
             },
-            Token{
+            Token {
                 span: (4, 5),
                 kind: TokenKind::Num(2.0),
+            },
+        ]
+    );
+}
+
+#[test]
+fn test_tokenize_sin_pi() {
+    let tokens: Vec<_> = tokenize("sin(pi)".chars())
+        .map(Result::unwrap)
+        .collect();
+    assert_eq!(
+        tokens,
+        vec![
+            Token {
+                span: (0, 3),
+                kind: TokenKind::Symbol("sin".to_string()),
+            },
+            Token {
+                span: (3, 4),
+                kind: TokenKind::OpenPar,
+            },
+            Token {
+                span: (4, 6),
+                kind: TokenKind::Symbol("pi".to_string()),
+            },
+            Token {
+                span: (6, 7),
+                kind: TokenKind::ClosePar,
             },
         ]
     );
