@@ -4,13 +4,18 @@ use std::process::ExitCode;
 use tc::TermCalc;
 use tc::{self, input::HasSpan};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 fn main() -> ExitCode {
     let mut interactive = false;
     let mut strip = false;
     let mut arg_evals = Vec::new();
 
     for arg in std::env::args().skip(1) {
-        if arg == "--interactive" || arg == "-i" {
+        if arg == "--version" {
+            println!("tc - a simple Terminal Calculator\nversion {}", VERSION);
+            return ExitCode::SUCCESS;
+        } else if arg == "--interactive" || arg == "-i" {
             interactive = true;
         } else if arg == "--strip" || arg == "-s" {
             strip = true;
