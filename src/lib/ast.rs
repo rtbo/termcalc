@@ -17,8 +17,8 @@ pub enum BinOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Item {
-    pub kind: ItemKind,
     pub span: Span,
+    pub kind: ItemKind,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,8 +29,8 @@ pub enum ItemKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
-    pub kind: ExprKind,
     pub span: Span,
+    pub kind: ExprKind,
 }
 
 #[derive(Debug, Clone, PartialEq)]
