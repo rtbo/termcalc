@@ -7,7 +7,7 @@ use tc::{self, input::HasSpan};
 fn main() -> ExitCode {
     let mut interactive = false;
     let mut strip = false;
-    let mut eval = Vec::new();
+    let mut arg_evals = Vec::new();
 
     for arg in std::env::args().skip(1) {
         if arg == "--interactive" || arg == "-i" {
@@ -15,11 +15,15 @@ fn main() -> ExitCode {
         } else if arg == "--strip" || arg == "-s" {
             strip = true;
         } else {
-            eval.push(arg);
+            arg_evals.push(arg);
         }
     }
 
-    let need_prompt = need_prompt(!eval.is_empty(), interactive, io::stdin().is_terminal());
+    let need_prompt = need_prompt(
+        !arg_evals.is_empty(),
+        interactive,
+        io::stdin().is_terminal(),
+    );
     let need_prompt = match need_prompt {
         Ok(need_prompt) => need_prompt,
         Err(err) => {
@@ -35,7 +39,7 @@ fn main() -> ExitCode {
         strip,
     };
 
-    driver.do_loop(eval)
+    driver.do_loop(arg_evals)
 }
 
 struct Driver {
@@ -46,22 +50,22 @@ struct Driver {
 }
 
 impl Driver {
-    fn do_loop(&mut self, eval_lines: Vec<String>) -> ExitCode{
-        let num_eval = eval_lines.len();
+    fn do_loop(&mut self, arg_evals: Vec<String>) -> ExitCode {
+        let num_arg_evals = arg_evals.len();
         if self.need_prompt {
-            let lines = eval_lines
+            let lines = arg_evals
                 .into_iter()
                 .map(Result::Ok)
                 .chain(io::stdin().lock().lines());
-            self.line_loop(lines, num_eval)
+            self.line_loop(lines, num_arg_evals)
         } else {
-            let lines = eval_lines.into_iter().map(Result::Ok);
+            let lines = arg_evals.into_iter().map(Result::Ok);
 
-            self.line_loop(lines, num_eval)
+            self.line_loop(lines, num_arg_evals)
         }
     }
 
-    fn line_loop<L>(&mut self, lines: L, num_eval: usize) -> ExitCode
+    fn line_loop<L>(&mut self, lines: L, num_arg_evals: usize) -> ExitCode
     where
         L: Iterator<Item = Result<String, io::Error>>,
     {
@@ -69,7 +73,7 @@ impl Driver {
             print_prompt(self.prompt);
         }
 
-        let mut num_eval = num_eval;
+        let mut num_arg_evals = num_arg_evals;
 
         for line in lines {
             let line = match line {
@@ -87,13 +91,13 @@ impl Driver {
                 }
             }
 
-            if num_eval > 0 && !self.strip {
+            if num_arg_evals > 0 && !self.strip {
                 print!("{} = ", line);
             }
 
             match self.tc.eval_line(line.as_str()) {
                 Ok(eval) => {
-                    if self.strip || num_eval > 0 {
+                    if self.strip || num_arg_evals > 0 {
                         println!("{}", eval.val);
                     } else {
                         println!("{} = {}", eval.sym, eval.val);
@@ -108,8 +112,8 @@ impl Driver {
                 }
             }
 
-            if num_eval > 0 {
-                num_eval -= 1;
+            if num_arg_evals > 0 {
+                num_arg_evals -= 1;
             }
 
             if self.need_prompt {
