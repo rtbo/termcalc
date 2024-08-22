@@ -87,14 +87,13 @@ impl Driver {
                 }
             }
 
-            if num_eval > 0 {
-                println!("{}", line);
-                num_eval -= 1;
+            if num_eval > 0 && !self.strip {
+                print!("{} = ", line);
             }
 
             match self.tc.eval_line(line.as_str()) {
                 Ok(eval) => {
-                    if self.strip {
+                    if self.strip || num_eval > 0 {
                         println!("{}", eval.val);
                     } else {
                         println!("{} = {}", eval.sym, eval.val);
@@ -107,6 +106,10 @@ impl Driver {
                         return ExitCode::FAILURE;
                     }
                 }
+            }
+
+            if num_eval > 0 {
+                num_eval -= 1;
             }
 
             if self.need_prompt {
