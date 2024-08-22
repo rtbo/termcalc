@@ -1,15 +1,15 @@
 use std::fmt::Display;
 use std::io::{self, BufRead, IsTerminal, Write};
+use std::process::ExitCode;
 use tc::TermCalc;
 use tc::{self, input::HasSpan};
 
-fn main() -> Result<(), Error> {
+fn main() -> ExitCode {
     let mut interactive = false;
     let mut strip = false;
     let mut eval = Vec::new();
 
     for arg in std::env::args().skip(1) {
-        println!("arg: {}", arg);
         if arg == "--interactive" || arg == "-i" {
             interactive = true;
         } else if arg == "--strip" || arg == "-s" {
@@ -19,7 +19,14 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let need_prompt = need_prompt(!eval.is_empty(), interactive, io::stdin().is_terminal())?;
+    let need_prompt = need_prompt(!eval.is_empty(), interactive, io::stdin().is_terminal());
+    let need_prompt = match need_prompt {
+        Ok(need_prompt) => need_prompt,
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            return ExitCode::FAILURE;
+        }
+    };
 
     let mut driver = Driver {
         tc: tc::TermCalc::new(),
@@ -39,69 +46,81 @@ struct Driver {
 }
 
 impl Driver {
-    fn do_loop(&mut self, eval_lines: Vec<String>) -> Result<(), Error> {
+    fn do_loop(&mut self, eval_lines: Vec<String>) -> ExitCode{
+        let num_eval = eval_lines.len();
         if self.need_prompt {
-            print_prompt(self.prompt);
             let lines = eval_lines
                 .into_iter()
                 .map(Result::Ok)
                 .chain(io::stdin().lock().lines());
-            self.line_loop(lines)
+            self.line_loop(lines, num_eval)
         } else {
             let lines = eval_lines.into_iter().map(Result::Ok);
-            self.line_loop(lines)
+
+            self.line_loop(lines, num_eval)
         }
     }
 
-    fn line_loop<L>(&mut self, lines: L) -> Result<(), Error>
+    fn line_loop<L>(&mut self, lines: L, num_eval: usize) -> ExitCode
     where
         L: Iterator<Item = Result<String, io::Error>>,
     {
+        if self.need_prompt {
+            print_prompt(self.prompt);
+        }
+
+        let mut num_eval = num_eval;
+
         for line in lines {
-            let line = line?;
+            let line = match line {
+                Ok(line) => line,
+                Err(err) => {
+                    eprintln!("IO Error: {}", err);
+                    return ExitCode::FAILURE;
+                }
+            };
+
             if self.need_prompt {
                 let ll = line.to_lowercase();
                 if matches!(ll.as_str(), "exit" | "quit" | "q") {
                     break;
                 }
             }
-            self.do_line(&line)?;
-        }
-        Ok(())
-    }
 
-    fn do_line(&mut self, line: &str) -> Result<(), Error> {
-        let eval = self.tc.eval_line(line);
+            if num_eval > 0 {
+                println!("{}", line);
+                num_eval -= 1;
+            }
 
-        if let Err(err) = eval {
-            print_diagnostic(line, &err);
+            match self.tc.eval_line(line.as_str()) {
+                Ok(eval) => {
+                    if self.strip {
+                        println!("{}", eval.val);
+                    } else {
+                        println!("{} = {}", eval.sym, eval.val);
+                    }
+                    self.prompt += 1;
+                }
+                Err(err) => {
+                    print_diagnostic(line.as_str(), &err);
+                    if !self.need_prompt {
+                        return ExitCode::FAILURE;
+                    }
+                }
+            }
+
             if self.need_prompt {
                 print_prompt(self.prompt);
-                return Ok(());
-            } else {
-                return Err(Error::Tc(err));
             }
         }
-
-        let eval = eval.unwrap();
-        if self.strip {
-            println!("{}", eval.val);
-        } else {
-            println!("{} = {}", eval.sym, eval.val);
-        }
-
-        if self.need_prompt {
-            self.prompt += 1;
-            print_prompt(self.prompt);
-        }
-        Ok(())
+        ExitCode::SUCCESS
     }
 }
 
 fn print_diagnostic(line: &str, err: &tc::Error) {
     let span = err.span();
     let msg = err.to_string();
-    eprintln!("at {}: {}", span.0 + 1, msg);
+    eprintln!("error: {}", msg);
     eprintln!("{line}");
     eprintln!(
         "{}{}",
@@ -148,10 +167,9 @@ impl From<ArgError> for Error {
     }
 }
 
-fn print_prompt(prompt: u32) -> u32 {
+fn print_prompt(prompt: u32) {
     print!("{}> ", prompt);
     io::stdout().flush().unwrap();
-    prompt / 10 + 2
 }
 
 fn need_prompt(has_eval: bool, interactive: bool, is_terminal: bool) -> Result<bool, ArgError> {
