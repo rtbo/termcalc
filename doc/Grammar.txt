@@ -1,0 +1,26 @@
+TC Grammar
+==========
+
+Whitespaces are ignored and comments can be entered, 
+starting from '#' and spanning until the end of the line.
+
+Each evaluation consists of 1 line which consists of either
+an expression or an assignment.
+All expressions are evaluated in double precision floating point.
+
+Assignment grammar is "symbol = expression"
+Expression grammar is what you would generally expect, and a set of
+mathematical functions are provided.
+
+A few examples:
+
+ - 4 + 3.5
+ - 0.124 * (6 + 12) / 3
+ - 4 * sin(2*pi/3)
+ - angle = asin(0.15)
+
+A set of special commands are available in interactive mode:
+ - exit, quit, q: exit the interactive shell
+ - help: print this document
+ - functions: print the list of supported functions
+ - grammar: print the EBNF grammar reference
