@@ -129,6 +129,7 @@ impl TermCalc {
                     ast::BinOp::Div => Ok(lhs / rhs),
                     ast::BinOp::Mod if rhs == 0.0 => Err(Error::ZeroDiv(span)),
                     ast::BinOp::Mod => Ok(lhs % rhs),
+                    ast::BinOp::Pow => Ok(lhs.powf(rhs)),
                 }
             }
             ast::ExprKind::UnOp(op, expr) => {

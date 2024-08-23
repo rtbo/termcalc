@@ -50,6 +50,7 @@ pub enum TokenKind {
     Star,
     Slash,
     Percent,
+    Hat,
     Comma,
     NewLine,
     Space,
@@ -122,6 +123,7 @@ where
             '*' => TokenKind::Star,
             '/' => TokenKind::Slash,
             '%' => TokenKind::Percent,
+            '^' => TokenKind::Hat,
             ',' => TokenKind::Comma,
             '\n' => TokenKind::NewLine,
             '#' => {

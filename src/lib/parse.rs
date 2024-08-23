@@ -218,7 +218,7 @@ where
         let tok = self.next_token()?;
         match tok {
             Some(Token { kind, span }) if is_un_op(&kind) => {
-                let expr = self.parse_primary()?;
+                let expr = self.parse_pow_expr()?;
                 let span = (span.0, expr.span.1);
                 Ok(ast::Expr {
                     kind: ast::ExprKind::UnOp(un_op(&kind), Box::new(expr)),
@@ -229,7 +229,28 @@ where
                 if let Some(tok) = tok {
                     self.tokens.put_back(Ok(tok));
                 }
-                Ok(self.parse_primary()?)
+                Ok(self.parse_pow_expr()?)
+            }
+        }
+    }
+
+    fn parse_pow_expr(&mut self) -> Result<ast::Expr> {
+        let lhs = self.parse_primary()?;
+        let tok = self.next_token()?;
+        match tok {
+            Some(Token { kind: TokenKind::Hat, .. })  => {
+                let rhs = self.parse_pow_expr()?;
+                let span = (lhs.span.0, rhs.span.1);
+                Ok(ast::Expr {
+                    kind: ast::ExprKind::BinOp(ast::BinOp::Pow, Box::new(lhs), Box::new(rhs)),
+                    span,
+                })
+            }
+            _ => {
+                if let Some(tok) = tok {
+                    self.tokens.put_back(Ok(tok));
+                }
+                Ok(lhs)
             }
         }
     }
@@ -428,6 +449,55 @@ fn test_parse_unary() {
                     }),
                 )
             })
+        }
+    )
+}
+
+#[test]
+fn test_parse_2nd_order() {
+    let item: ast::Item = parse_line("y = 3*x^2 + 4".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 13),
+            kind: ast::ItemKind::Assign(
+                "y".to_string(),
+                ast::Expr {
+                    span: (4, 13),
+                    kind: ast::ExprKind::BinOp(
+                        ast::BinOp::Add,
+                        Box::new(ast::Expr {
+                            span: (4, 9),
+                            kind: ast::ExprKind::BinOp(
+                                ast::BinOp::Mul,
+                                Box::new(ast::Expr {
+                                    span: (4, 5),
+                                    kind: ast::ExprKind::Num(3.0),
+                                }),
+                                Box::new(ast::Expr {
+                                    span: (6, 9),
+                                    kind: ast::ExprKind::BinOp(
+                                        ast::BinOp::Pow,
+                                        Box::new(ast::Expr {
+                                            span: (6, 7),
+                                            kind: ast::ExprKind::Var("x".to_string()),
+                                        }),
+                                        Box::new(ast::Expr {
+                                            span: (8, 9),
+                                            kind: ast::ExprKind::Num(2.0),
+                                        }),
+                                    ),
+                                }),
+                            )
+                        }),
+                        Box::new(ast::Expr{
+                            span: (12, 13),
+                            kind: ast::ExprKind::Num(4.0),
+                        })
+                    ),
+                },
+            )
         }
     )
 }
