@@ -68,6 +68,7 @@ impl Args {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Func {
     pub category: Category,
