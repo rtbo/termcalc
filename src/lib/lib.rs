@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 mod ast;
+mod func;
 pub mod input;
 pub mod lex;
 pub mod parse;
@@ -16,7 +17,7 @@ pub enum Error {
     FuncArgCount {
         span: Span,
         name: String,
-        expected: u32,
+        expected: func::ArgCount,
         actual: u32,
     },
     ZeroDiv(Span),
@@ -37,9 +38,7 @@ impl HasSpan for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Parse(err) => {
-                err.fmt(f)
-            }
+            Error::Parse(err) => err.fmt(f),
             Error::UnknownVar(_, name) => {
                 write!(f, "Unknown variable: {name}")
             }
@@ -54,8 +53,7 @@ impl Display for Error {
             } => {
                 write!(
                     f,
-                    "Function {name} expected {expected} argument{}, but got {actual}",
-                    if *expected > 1 { "s" } else { "" }
+                    "Function {name} expects {expected}, but received {actual}"
                 )
             }
             Error::ZeroDiv(_) => {
@@ -80,6 +78,7 @@ pub struct Eval {
 #[derive(Debug)]
 pub struct TermCalc {
     vars: HashMap<String, f64>,
+    funcs: HashMap<String, func::Func>,
 }
 
 impl TermCalc {
@@ -87,6 +86,11 @@ impl TermCalc {
         let mut vars = HashMap::new();
         vars.insert("pi".to_string(), std::f64::consts::PI);
         vars.insert("e".to_string(), std::f64::consts::E);
+        let funcs = func::all_funcs()
+            .into_iter()
+            .map(|f| (f.name.clone(), f))
+            .collect();
+        TermCalc { vars, funcs }
     }
 
     pub fn eval_line<S: AsRef<str>>(&mut self, line: S) -> Result<Eval, Error> {
@@ -101,8 +105,8 @@ impl TermCalc {
             ast::ItemKind::Expr(expr) => ("ans".to_string(), expr),
         };
 
-                let val = self.eval_expr(expr)?;
-                self.vars.insert(sym.clone(), val);
+        let val = self.eval_expr(expr)?;
+        self.vars.insert(sym.clone(), val);
         Ok(Eval { sym, val })
     }
 
@@ -139,177 +143,46 @@ impl TermCalc {
     }
 
     fn eval_call(&self, span: Span, func: String, args: Vec<ast::Expr>) -> Result<f64, Error> {
-        match func.as_str() {
-            // trivial
-            "floor" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.floor())
-            }
-            "ceil" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.ceil())
-            }
-            "round" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.round())
-            }
-            "trunc" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.trunc())
-            }
-            "fract" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.fract())
-            }
-            "abs" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.abs())
-            }
-            "sign" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.signum())
-            }
-            "min" => {
-                let (arg1, arg2) = expect_2_args(span, func, args)?;
-                let arg1 = self.eval_expr(arg1)?;
-                let arg2 = self.eval_expr(arg2)?;
-                Ok(arg1.min(arg2))
-            }
-            "max" => {
-                let (arg1, arg2) = expect_2_args(span, func, args)?;
-                let arg1 = self.eval_expr(arg1)?;
-                let arg2 = self.eval_expr(arg2)?;
-                Ok(arg1.max(arg2))
-            }
-            // power and log
-            "pow" => {
-                let (arg1, arg2) = expect_2_args(span, func, args)?;
-                let arg1 = self.eval_expr(arg1)?;
-                let arg2 = self.eval_expr(arg2)?;
-                Ok(arg1.powf(arg2))
-            }
-            "sqrt" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.sqrt())
-            }
-            "cbrt" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.cbrt())
-            }
-            "exp" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.exp())
-            }
-            "ln" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.ln())
-            }
-            "log2" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.log2())
-            }
-            "log10" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.log10())
-            }
-            "log" => {
-                let (arg1, arg2) = expect_2_args(span, func, args)?;
-                let arg1 = self.eval_expr(arg1)?;
-                let arg2 = self.eval_expr(arg2)?;
-                Ok(arg1.log(arg2))
-            }
-            // trigonometric
-            "sin" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.sin())
-            }
-            "sinh" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.sinh())
-            }
-            "asin" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.asin())
-            }
-            "asinh" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.asinh())
-            }
-            "cos" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.cos())
-            }
-            "cosh" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.cosh())
-            }
-            "acos" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.acos())
-            }
-            "acosh" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.acosh())
-            }
-            "tan" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.tan())
-            }
-            "tanh" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.tanh())
-            }
-            "atan" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.atan())
-            }
-            "atanh" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.atanh())
-            }
-            "degrees" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.to_degrees())
-            }
-            "radians" => {
-                let arg = self.eval_expr(expect_1_arg(span, func, args)?)?;
-                Ok(arg.to_radians())
-            }
-            _ => Err(Error::UnknownFunc(span, func)),
+        let func = match self.funcs.get(&func) {
+            Some(f) => f,
+            None => return Err(Error::UnknownFunc(span, func)),
+        };
+        let args = self.eval_args(span, func, args)?;
+        let f = func.eval;
+        Ok(f(args))
+    }
+
+    fn eval_args(
+        &self,
+        span: Span,
+        func: &func::Func,
+        args: Vec<ast::Expr>,
+    ) -> Result<func::Args, Error> {
+        if !func.arg_count.check(args.len()) {
+            return Err(Error::FuncArgCount {
+                span,
+                name: func.name.clone(),
+                expected: func.arg_count,
+                actual: args.len() as _,
+            });
         }
-    }
-}
-
-fn expect_1_arg(span: Span, func: String, args: Vec<ast::Expr>) -> Result<ast::Expr, Error> {
-    let mut args = args;
-    if args.len() == 1 {
-        Ok(args.pop().unwrap())
-    } else {
-        Err(Error::FuncArgCount {
-            span,
-            name: func,
-            expected: 1,
-            actual: args.len() as _,
-        })
-    }
-}
-
-fn expect_2_args(
-    span: Span,
-    func: String,
-    args: Vec<ast::Expr>,
-) -> Result<(ast::Expr, ast::Expr), Error> {
-    let mut args = args;
-    if args.len() == 2 {
-        let arg2 = args.pop().unwrap();
-        let arg1 = args.pop().unwrap();
-        Ok((arg1, arg2))
-    } else {
-        Err(Error::FuncArgCount {
-            span,
-            name: func,
-            expected: 2,
-            actual: args.len() as _,
+        let mut args = args.into_iter();
+        Ok(match func.arg_count {
+            func::ArgCount::One => {
+                let arg = self.eval_expr(args.next().unwrap())?;
+                func::Args::One(arg)
+            }
+            func::ArgCount::Two => {
+                let arg1 = self.eval_expr(args.next().unwrap())?;
+                let arg2 = self.eval_expr(args.next().unwrap())?;
+                func::Args::Two(arg1, arg2)
+            }
+            func::ArgCount::Atleast(..) => {
+                let args = args
+                    .map(|e| self.eval_expr(e))
+                    .collect::<Result<Vec<_>, _>>()?;
+                func::Args::Dyn(args)
+            }
         })
     }
 }
