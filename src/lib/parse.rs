@@ -179,7 +179,7 @@ where
         let tok = self.next_token()?;
         match tok {
             Some(Token { kind, .. }) if is_add_op(&kind) => {
-                let rhs = self.parse_mul_expr()?;
+                let rhs = self.parse_add_expr()?;
                 let span = (lhs.span.0, rhs.span.1);
                 Ok(ast::Expr {
                     kind: ast::ExprKind::BinOp(bin_op(&kind), Box::new(lhs), Box::new(rhs)),
@@ -199,7 +199,7 @@ where
         let tok = self.next_token()?;
         match tok {
             Some(Token { kind, .. }) if is_mul_op(&kind) => {
-                let rhs = self.parse_unary_expr()?;
+                let rhs = self.parse_mul_expr()?;
                 let span = (lhs.span.0, rhs.span.1);
                 Ok(ast::Expr {
                     kind: ast::ExprKind::BinOp(bin_op(&kind), Box::new(lhs), Box::new(rhs)),
@@ -517,4 +517,76 @@ fn test_sin_pi() {
 #[test]
 fn fail_test_14_eq_12() {
     assert!(parse_line("14 = 12".chars()).is_err());
+}
+
+#[test]
+fn test_add_add_add() {
+    let item: ast::Item = parse_line("1 + 2 + 3".chars()).unwrap();
+    
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 9),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 9),
+                kind: ast::ExprKind::BinOp(
+                    ast::BinOp::Add,
+                    Box::new(ast::Expr {
+                        span: (0, 1),
+                        kind: ast::ExprKind::Num(1.0),
+                    }),
+                    Box::new(ast::Expr {
+                        span: (4, 9),
+                        kind: ast::ExprKind::BinOp(
+                            ast::BinOp::Add,
+                            Box::new(ast::Expr {
+                                span: (4, 5),
+                                kind: ast::ExprKind::Num(2.0),
+                            }),
+                            Box::new(ast::Expr {
+                                span: (8, 9),
+                                kind: ast::ExprKind::Num(3.0),
+                            })
+                        ),
+                    })
+                )
+            })
+        }
+    );
+}
+
+#[test]
+fn test_mul_mul_mul() {
+    let item: ast::Item = parse_line("1 * 2 * 3".chars()).unwrap();
+    
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 9),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 9),
+                kind: ast::ExprKind::BinOp(
+                    ast::BinOp::Mul,
+                    Box::new(ast::Expr {
+                        span: (0, 1),
+                        kind: ast::ExprKind::Num(1.0),
+                    }),
+                    Box::new(ast::Expr {
+                        span: (4, 9),
+                        kind: ast::ExprKind::BinOp(
+                            ast::BinOp::Mul,
+                            Box::new(ast::Expr {
+                                span: (4, 5),
+                                kind: ast::ExprKind::Num(2.0),
+                            }),
+                            Box::new(ast::Expr {
+                                span: (8, 9),
+                                kind: ast::ExprKind::Num(3.0),
+                            })
+                        ),
+                    })
+                )
+            })
+        }
+    );
 }
