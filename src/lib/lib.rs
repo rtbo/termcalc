@@ -86,7 +86,7 @@ impl TermCalc {
     pub fn new() -> Self {
         let mut vars = HashMap::new();
         vars.insert("pi".to_string(), std::f64::consts::PI);
-        TermCalc { vars }
+        vars.insert("e".to_string(), std::f64::consts::E);
     }
 
     pub fn eval_line<S: AsRef<str>>(&mut self, line: S) -> Result<Eval, Error> {
