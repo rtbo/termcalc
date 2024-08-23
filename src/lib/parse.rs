@@ -385,6 +385,54 @@ fn test_parse_add() {
 }
 
 #[test]
+fn test_parse_mul() {
+    let item: ast::Item = parse_line("2 * 3".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 5),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 5),
+                kind: ast::ExprKind::BinOp(
+                    ast::BinOp::Mul,
+                    Box::new(ast::Expr {
+                        span: (0, 1),
+                        kind: ast::ExprKind::Num(2.0),
+                    }),
+                    Box::new(ast::Expr {
+                        span: (4, 5),
+                        kind: ast::ExprKind::Num(3.0),
+                    })
+                )
+            })
+        }
+    )
+}
+
+#[test]
+fn test_parse_unary() {
+    let item: ast::Item = parse_line("-3".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 2),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 2),
+                kind: ast::ExprKind::UnOp(
+                    ast::UnOp::Minus, 
+                    Box::new(ast::Expr{
+                        span: (1, 2),
+                        kind: ast::ExprKind::Num(3.0),
+                    }),
+                )
+            })
+        }
+    )
+}
+
+#[test]
 fn test_parse_add_mul() {
     let items: ast::Item = parse_line("1 + 2 * 3".chars()).unwrap();
 
