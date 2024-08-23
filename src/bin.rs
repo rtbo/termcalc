@@ -7,8 +7,7 @@ use tc::TermCalc;
 use tc::{self, input::HasSpan};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const AFTER_HELP: &str =
-    "If [EVALS] if provided, passed arguments will be evaluated,
+const AFTER_HELP: &str = "If [EVALS] if provided, passed arguments will be evaluated,
 and program will exit unless --interactive is specified.
 
 If [EVALS] is not provided, program will enter interactive mode
@@ -60,6 +59,11 @@ impl Args {
 
 fn main() -> ExitCode {
     let args = Args::parse();
+
+    if args.strip && args.interactive {
+        eprintln!("--strip cannot be used with --interactive");
+        return ExitCode::FAILURE;
+    }
 
     let mut driver = match Driver::new(args) {
         Ok(driver) => driver,
@@ -139,17 +143,25 @@ impl Driver {
                 }
             }
 
-            if num_arg_evals > 0 && !self.strip {
-                print!("{} = ", line);
-            }
-
             match self.tc.eval_line(line.as_str()) {
                 Ok(eval) => {
-                    if self.strip || num_arg_evals > 0 {
-                        println!("{}", eval.val);
-                    } else {
-                        println!("{} = {}", eval.sym, eval.val);
+                    let from_stdin = num_arg_evals == 0;
+                    match (from_stdin, self.strip, self.interactive) {
+                        (false, false, false) => {
+                            println!("{} = {}", line, eval.val);
+                        }
+                        (false, false, true) => {
+                            println!("{} = {}", line, eval.val);
+                        }
+                        (false, true, false) => {
+                            println!("{}", eval.val);
+                        }
+                        (true, false, true) => {
+                            println!("{} = {}", eval.sym, eval.val);
+                        }
+                        _ => unreachable!("--strip with --interactive")
                     }
+                    io::stdout().flush().unwrap();
                     self.prompt += 1;
                 }
                 Err(err) => {
@@ -182,7 +194,7 @@ fn print_diagnostic(line: &str, err: &tc::Error) {
     if color {
         eprintln!("{}: {}", "error".red().bold(), msg);
     } else {
-    eprintln!("error: {}", msg);
+        eprintln!("error: {}", msg);
     }
     eprintln!("{line}");
     if color {
@@ -192,11 +204,11 @@ fn print_diagnostic(line: &str, err: &tc::Error) {
             "^".repeat((span.1 - span.0) as _).red().bold()
         );
     } else {
-    eprintln!(
-        "{}{}",
-        " ".repeat(span.0 as _),
-        "^".repeat((span.1 - span.0) as _)
-    );
+        eprintln!(
+            "{}{}",
+            " ".repeat(span.0 as _),
+            "^".repeat((span.1 - span.0) as _)
+        );
     }
 }
 
