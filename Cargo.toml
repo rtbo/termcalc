@@ -11,3 +11,6 @@ path = "src/lib/lib.rs"
 [[bin]]
 name = "tc"
 path = "src/bin.rs"
+
+[dependencies]
+clap = { version = "4.5.16", features = ["derive"] }
