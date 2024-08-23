@@ -69,13 +69,13 @@ impl From<parse::Error> for Error {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Eval {
     pub sym: String,
     pub val: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TermCalc {
     vars: HashMap<String, f64>,
     funcs: HashMap<String, func::Func>,
@@ -185,5 +185,78 @@ impl TermCalc {
                 func::Args::Dyn(args)
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Eval, TermCalc};
+    use approx::{assert_relative_eq, AbsDiffEq, RelativeEq, UlpsEq};
+
+    impl AbsDiffEq for Eval {
+        type Epsilon = f64;
+        fn default_epsilon() -> Self::Epsilon {
+            f64::default_epsilon()
+        }
+        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+            self.sym == other.sym && self.val.abs_diff_eq(&other.val, epsilon)
+        }
+    }
+
+    impl RelativeEq for Eval {
+        fn default_max_relative() -> Self::Epsilon {
+            f64::default_max_relative()
+        }
+        fn relative_eq(&self, other: &Self, epsilon: Self::Epsilon, max_relative: Self::Epsilon) -> bool {
+            self.sym == other.sym
+                && self.val.relative_eq(&other.val, epsilon, max_relative)
+        }
+    }
+
+    impl UlpsEq for Eval {
+        fn default_max_ulps() -> u32 {
+            f64::default_max_ulps()
+        }
+        fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+            self.sym == other.sym
+                && self.val.ulps_eq(&other.val, epsilon, max_ulps)
+        }
+    }
+
+    #[test]
+    fn test_eval_line() {
+        let mut tc = TermCalc::new();
+        // integers have perfect precision, no need for relative_eq!
+        assert_eq!(
+            tc.eval_line("1").unwrap(),
+            Eval {
+                sym: "ans".to_string(),
+                val: 1.0,
+            }
+        );
+        assert_relative_eq!(
+            tc.eval_line("sin(pi/2)").unwrap(),
+            Eval {
+                sym: "ans".to_string(),
+                val: 1.0,
+            },
+            epsilon = f64::EPSILON,
+        );
+        assert_relative_eq!(
+            tc.eval_line("x = cos(pi)").unwrap(),
+            Eval {
+                sym: "x".to_string(),
+                val: -1.0,
+            },
+            epsilon = f64::EPSILON,
+        );
+        assert_relative_eq!(
+            tc.eval_line("y = x + ans").unwrap(),
+            Eval {
+                sym: "y".to_string(),
+                val: 0.0,
+            },
+            epsilon = f64::EPSILON,
+        );
     }
 }
