@@ -173,15 +173,31 @@ impl Driver {
 }
 
 fn print_diagnostic(line: &str, err: &tc::Error) {
+    use colored::Colorize;
+
     let span = err.span();
     let msg = err.to_string();
+    let color = io::stderr().is_terminal();
+
+    if color {
+        eprintln!("{}: {}", "error".red().bold(), msg);
+    } else {
     eprintln!("error: {}", msg);
+    }
     eprintln!("{line}");
+    if color {
+        eprintln!(
+            "{}{}",
+            " ".repeat(span.0 as _),
+            "^".repeat((span.1 - span.0) as _).red().bold()
+        );
+    } else {
     eprintln!(
         "{}{}",
         " ".repeat(span.0 as _),
         "^".repeat((span.1 - span.0) as _)
     );
+    }
 }
 
 #[derive(Debug)]
