@@ -224,28 +224,3 @@ impl Display for ArgError {
         }
     }
 }
-
-#[derive(Debug)]
-enum Error {
-    Tc(tc::Error),
-    Io(io::Error),
-    Arg(ArgError),
-}
-
-impl From<io::Error> for Error {
-    fn from(e: io::Error) -> Self {
-        Error::Io(e)
-    }
-}
-
-impl From<tc::Error> for Error {
-    fn from(e: tc::Error) -> Self {
-        Error::Tc(e)
-    }
-}
-
-impl From<ArgError> for Error {
-    fn from(e: ArgError) -> Self {
-        Error::Arg(e)
-    }
-}
