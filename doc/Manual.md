@@ -10,6 +10,8 @@
 
 | **tc** [**-i**|**--interactive**]
 |    [**-s**|**--strip**]
+|    [**-f**|**--functions**]
+|    [**-g**|**--grammar**]
 |    [**-h**|**--help**]
 |    [**-V**|**--version**]
 |    [*EXPR*]...
@@ -17,7 +19,7 @@
 # DESCRIPTION
 
 **tc** is a simple Terminal Calculator. It can be provided expressions to
-evaluate on the command line, or it can enter an interactive shell.
+evaluate on the command line, or it can enter in interactive shell mode.
 
 If expressions are provided on the command line, they will be evaluated
 in order, and program will exit unless **--interactive**
@@ -35,7 +37,8 @@ and exit. This is useful to parse **tc**'s output from scripts.
 A set of special commands are available in the interactive shell:
 
 * `quit`, `q`, `exit`: exit the program
-* `manual`: print this manual
+* `functions`: print the list of supported functions
+* `manual`, `man`: print this manual
 * `grammar`: print the EBNF grammar reference
 
 ## Grammar
@@ -47,7 +50,7 @@ Each evaluation consists of one line which is either an expression or an
 assignment.  All expressions are evaluated in double precision floating point.
 
 Expression grammar is what you would generally expect for ASCII arithmetic
-expressions (see *examples* hereunder for a quick tuto).
+expressions (see the *examples* hereunder for a quick tuto).
 
 Assignment grammar is `variable = expression`.
 Once a variable is assigned, it can be reused in latter expressions.
@@ -86,6 +89,9 @@ respectively.
 
 **-s**, **--strip**
 :   Strip output of evaluations to minimum
+
+**-f**, **--functions**
+:   Print the list of supported functions
 
 **-g**, **--grammar**
 :   Print the EBNF grammar reference
