@@ -16,6 +16,19 @@ regardless of the --interactive switch.
 const MANUAL: &str = include_str!("../doc/gen/tc.1.ansi");
 const GRAMMAR: &str = include_str!("../doc/Grammar.ebnf");
 
+#[derive(Debug)]
+enum ArgError {
+    NeedTerminal,
+}
+
+impl Display for ArgError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ArgError::NeedTerminal => write!(f, "--interactive requires terminal"),
+        }
+    }
+}
+
 /// A simple Terminal Calculator
 #[derive(Parser, Debug)]
 #[command(name = "tc", version = VERSION, about = "tc - a simple Terminal Calculator", after_long_help = AFTER_HELP)]
@@ -279,17 +292,4 @@ fn print_functions() {
     }
 
     control::unset_override();
-}
-
-#[derive(Debug)]
-enum ArgError {
-    NeedTerminal,
-}
-
-impl Display for ArgError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ArgError::NeedTerminal => write!(f, "--interactive requires terminal"),
-        }
-    }
 }
