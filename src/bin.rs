@@ -29,6 +29,18 @@ impl Display for ArgError {
     }
 }
 
+#[derive(Debug)]
+enum RunError {
+    Io(io::Error),
+    Tc(String, tc::Error),
+}
+
+impl From<io::Error> for RunError {
+    fn from(err: io::Error) -> Self {
+        RunError::Io(err)
+    }
+}
+
 /// A simple Terminal Calculator
 #[derive(Parser, Debug)]
 #[command(name = "tc", version = VERSION, about = "tc - a simple Terminal Calculator", after_long_help = AFTER_HELP)]
@@ -114,7 +126,17 @@ fn main() -> ExitCode {
         }
     };
 
-    driver.run()
+    match driver.run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(RunError::Io(err)) => {
+            eprintln!("IO Error: {}", err);
+            ExitCode::FAILURE
+        }
+        Err(RunError::Tc(line, err)) => {
+            let _ = print_diagnostic(&line, &err);
+            ExitCode::FAILURE
+        }
+    }
 }
 
 struct Driver {
@@ -137,44 +159,29 @@ impl Driver {
         })
     }
 
-    fn run(&mut self) -> ExitCode {
-        let mut errs = 0;
+    fn run(&mut self) -> Result<(), RunError> {
         for expr in self.arg_evals.as_slice() {
-            let res = match self.tc.eval_line(expr.as_str()) {
-                Ok(eval) if self.strip => {
-                    println!("{}", eval.val);
-                    io::stdout().flush()
-                }
-                Ok(eval) if eval.sym == "ans" => {
-                    println!("{} = {}", expr, eval.val);
-                    io::stdout().flush()
-                }
-                Ok(eval) => {
-                    println!("{} = {}", eval.sym, eval.val);
-                    io::stdout().flush()
-                }
+            let eval = match self.tc.eval_line(expr.as_str()) {
+                Ok(eval) => eval,
                 Err(err) => {
-                    errs += 1;
-                    self.print_diagnostic(expr, &err)
+                    return Err(RunError::Tc(expr.to_string(), err));
                 }
             };
-            if let Err(err) = res {
-                eprintln!("IO Error: {}", err);
-                return ExitCode::FAILURE;
+            if self.strip {
+                println!("{}", eval.val);
+            } else if eval.sym == "ans" {
+                println!("{} = {}", expr, eval.val);
+            } else {
+                println!("{} = {}", eval.sym, eval.val);
             }
-        }
-        if errs > 0 {
-            return ExitCode::from(errs);
+            io::stdout().flush()?;
         }
 
         if self.interactive {
-            if let Err(err) = self.interactive_loop() {
-                eprintln!("IO Error: {}", err);
-                return ExitCode::FAILURE;
-            }
+            self.interactive_loop()?;
         }
 
-        ExitCode::SUCCESS
+        Ok(())
     }
 
     fn print_prompt(&self) {
@@ -225,7 +232,7 @@ impl Driver {
                     println!("{} = {}", eval.sym, eval.val);
                     io::stdout().flush()?;
                 }
-                Err(err) => self.print_diagnostic(line.as_str(), &err)?,
+                Err(err) => print_diagnostic(line.as_str(), &err)?,
             };
 
             self.print_prompt();
@@ -233,29 +240,29 @@ impl Driver {
 
         Ok(())
     }
+}
 
-    fn print_diagnostic(&self, line: &str, err: &tc::Error) -> Result<(), io::Error> {
-        use colored::{control, Colorize};
+fn print_diagnostic(line: &str, err: &tc::Error) -> Result<(), io::Error> {
+    use colored::{control, Colorize};
 
-        let span = err.span();
-        let msg = err.to_string();
+    let span = err.span();
+    let msg = err.to_string();
 
-        if !io::stderr().is_terminal() {
-            control::set_override(false);
-        }
-
-        eprintln!("{}: {}", "error".red().bold(), msg);
-        eprintln!("{line}");
-        eprintln!(
-            "{}{}",
-            " ".repeat(span.0 as _),
-            "^".repeat((span.1 - span.0) as _).red().bold()
-        );
-
-        control::unset_override();
-
-        io::stderr().flush()
+    if !io::stderr().is_terminal() {
+        control::set_override(false);
     }
+
+    eprintln!("{}: {}", "error".red().bold(), msg);
+    eprintln!("{line}");
+    eprintln!(
+        "{}{}",
+        " ".repeat(span.0 as _),
+        "^".repeat((span.1 - span.0) as _).red().bold()
+    );
+
+    control::unset_override();
+
+    io::stderr().flush()
 }
 
 fn print_functions() -> io::Result<()> {
