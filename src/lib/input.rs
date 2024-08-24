@@ -1,4 +1,3 @@
-
 /// Byte position into an input stream.
 pub type Pos = u32;
 
@@ -19,7 +18,7 @@ pub struct Cursor<T> {
     input: T,
     // current position in the stream
     cur_pos: u32,
-    // position of each encountered new line    
+    // position of each encountered new line
     nl_pos: Vec<u32>,
     // put_back stack
     stack: Vec<char>,
@@ -59,13 +58,13 @@ impl<T> Cursor<T> {
     }
 }
 
-impl <T: Iterator<Item = char> + Clone> Cursor<T> {
+impl<T: Iterator<Item = char> + Clone> Cursor<T> {
     pub fn first(&self) -> Option<char> {
         self.input.clone().next()
     }
 }
 
-impl <T: Iterator<Item = char>> Iterator for Cursor<T> {
+impl<T: Iterator<Item = char>> Iterator for Cursor<T> {
     type Item = char;
     fn next(&mut self) -> Option<char> {
         let c = if self.stack.is_empty() {

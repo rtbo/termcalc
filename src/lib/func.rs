@@ -30,7 +30,7 @@ impl ArgCount {
             ArgCount::One => count == 1,
             ArgCount::Two => count == 2,
             ArgCount::Atleast(n) => count >= *n as usize,
-        } 
+        }
     }
 }
 
@@ -40,7 +40,9 @@ impl Display for ArgCount {
             // printed in error message
             ArgCount::One => write!(f, "one argument"),
             ArgCount::Two => write!(f, "two arguments"),
-            ArgCount::Atleast(n) => write!(f, "at least {n} argument{}", if *n > 1 { "s" } else { "" }),
+            ArgCount::Atleast(n) => {
+                write!(f, "at least {n} argument{}", if *n > 1 { "s" } else { "" })
+            }
         }
     }
 }
@@ -95,63 +97,49 @@ pub fn all_funcs() -> Vec<Func> {
             name: "floor".to_string(),
             help: "floor value to lower integer".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().floor()
-            },
+            eval: |args| args.first().floor(),
         },
         Func {
             category: Category::General,
             name: "round".to_string(),
             help: "round value to nearest integer".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().round()
-            },
+            eval: |args| args.first().round(),
         },
         Func {
             category: Category::General,
             name: "ceil".to_string(),
             help: "ceil value to upper integer".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().ceil()
-            },
+            eval: |args| args.first().ceil(),
         },
         Func {
             category: Category::General,
             name: "trunc".to_string(),
             help: "truncate value to its integer part (always towards zero)".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().trunc()
-            },
+            eval: |args| args.first().trunc(),
         },
         Func {
             category: Category::General,
             name: "fract".to_string(),
             help: "compute fractional part of the value".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().fract()
-            },
+            eval: |args| args.first().fract(),
         },
         Func {
             category: Category::General,
             name: "abs".to_string(),
             help: "compute absolute value".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().abs()
-            },
+            eval: |args| args.first().abs(),
         },
         Func {
             category: Category::General,
             name: "sign".to_string(),
             help: "value sign (1 or -1)".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().signum()
-            },
+            eval: |args| args.first().signum(),
         },
         Func {
             category: Category::General,
@@ -181,238 +169,180 @@ pub fn all_funcs() -> Vec<Func> {
                 max
             },
         },
-
         Func {
             category: Category::PowerLog,
             name: "pow".to_string(),
             arg_count: ArgCount::Two,
             help: "first argument raised to the power the second argument".to_string(),
-            eval: |args| {
-                args.first().powf(args.second())
-            },
+            eval: |args| args.first().powf(args.second()),
         },
         Func {
             category: Category::PowerLog,
             name: "sqrt".to_string(),
             help: "square root".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().sqrt()
-            },
+            eval: |args| args.first().sqrt(),
         },
         Func {
             category: Category::PowerLog,
             name: "cbrt".to_string(),
             help: "cubic root".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().cbrt()
-            },
+            eval: |args| args.first().cbrt(),
         },
         Func {
             category: Category::PowerLog,
             name: "exp".to_string(),
             help: "exponential function (exp(x) = pow(e, x))".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().exp()
-            },
+            eval: |args| args.first().exp(),
         },
-
         Func {
             category: Category::PowerLog,
             name: "log".to_string(),
             help: "log(b, x) is base b logarithm of x".to_string(),
             arg_count: ArgCount::Two,
-            eval: |args| {
-                args.first().log(args.second())
-            },
+            eval: |args| args.first().log(args.second()),
         },
         Func {
             category: Category::PowerLog,
             name: "ln".to_string(),
             help: "natural logarithm".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().ln()
-            },
+            eval: |args| args.first().ln(),
         },
         Func {
             category: Category::PowerLog,
             name: "log2".to_string(),
             help: "base 2 logarithm".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().log2()
-            },
+            eval: |args| args.first().log2(),
         },
         Func {
             category: Category::PowerLog,
             name: "log10".to_string(),
             help: "base 10 logarithm".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().log10()
-            },
+            eval: |args| args.first().log10(),
         },
-
         Func {
             category: Category::Trigonometry,
             name: "sin".to_string(),
             help: "sine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().sin()
-            },
+            eval: |args| args.first().sin(),
         },
         Func {
             category: Category::Trigonometry,
             name: "cos".to_string(),
             help: "cosine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().cos()
-            },
+            eval: |args| args.first().cos(),
         },
         Func {
             category: Category::Trigonometry,
             name: "tan".to_string(),
             help: "tangent function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().tan()
-            },
+            eval: |args| args.first().tan(),
         },
-
         Func {
             category: Category::Trigonometry,
             name: "csc".to_string(),
             help: "cosecante function (inverse of sine)".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                1.0 / args.first().sin()
-            },
+            eval: |args| 1.0 / args.first().sin(),
         },
         Func {
             category: Category::Trigonometry,
             name: "sec".to_string(),
             help: "secante function (inverse of cosine)".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                1.0 / args.first().cos()
-            },
+            eval: |args| 1.0 / args.first().cos(),
         },
         Func {
             category: Category::Trigonometry,
             name: "cot".to_string(),
             help: "cotangent function (inverse of tangent)".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                1.0 / args.first().tan()
-            },
+            eval: |args| 1.0 / args.first().tan(),
         },
-        
         Func {
             category: Category::Trigonometry,
             name: "asin".to_string(),
             help: "arc sine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().asin()
-            },
+            eval: |args| args.first().asin(),
         },
         Func {
             category: Category::Trigonometry,
             name: "acos".to_string(),
             help: "arc cosine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().acos()
-            },
+            eval: |args| args.first().acos(),
         },
         Func {
             category: Category::Trigonometry,
             name: "atan".to_string(),
             help: "arc tangent function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().atan()
-            },
+            eval: |args| args.first().atan(),
         },
-
         Func {
             category: Category::Trigonometry,
             name: "sinh".to_string(),
             help: "hyperbolic sine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().sinh()
-            },
+            eval: |args| args.first().sinh(),
         },
         Func {
             category: Category::Trigonometry,
             name: "cosh".to_string(),
             help: "hyperbolic cosine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().cosh()
-            },
+            eval: |args| args.first().cosh(),
         },
         Func {
             category: Category::Trigonometry,
             name: "tanh".to_string(),
             help: "hyperbolic tangent function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().tanh()
-            },
+            eval: |args| args.first().tanh(),
         },
-
         Func {
             category: Category::Trigonometry,
             name: "asinh".to_string(),
             help: "hyperbolic arc sine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().asinh()
-            },
+            eval: |args| args.first().asinh(),
         },
         Func {
             category: Category::Trigonometry,
             name: "acosh".to_string(),
             help: "hyperbolic arc cosine function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().acosh()
-            },
+            eval: |args| args.first().acosh(),
         },
         Func {
             category: Category::Trigonometry,
             name: "atanh".to_string(),
             help: "hyperbolic arc tangent function".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().atanh()
-            },
+            eval: |args| args.first().atanh(),
         },
-
         Func {
             category: Category::Trigonometry,
             name: "degs".to_string(),
             help: "convert radians to degrees".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().to_degrees()
-            },
+            eval: |args| args.first().to_degrees(),
         },
         Func {
             category: Category::Trigonometry,
             name: "rads".to_string(),
             help: "convert degrees to radians".to_string(),
             arg_count: ArgCount::One,
-            eval: |args| {
-                args.first().to_radians()
-            },
+            eval: |args| args.first().to_radians(),
         },
     ]
 }

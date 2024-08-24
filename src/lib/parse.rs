@@ -165,7 +165,10 @@ where
         };
         let tok = self.next_token()?;
         if let Some(tok) = tok {
-            return Err(Error::UnexpectedToken(tok, Some("NewLine or Operator".to_string())));
+            return Err(Error::UnexpectedToken(
+                tok,
+                Some("NewLine or Operator".to_string()),
+            ));
         }
         item
     }
@@ -238,7 +241,10 @@ where
         let lhs = self.parse_primary()?;
         let tok = self.next_token()?;
         match tok {
-            Some(Token { kind: TokenKind::Hat, .. })  => {
+            Some(Token {
+                kind: TokenKind::Hat,
+                ..
+            }) => {
                 let rhs = self.parse_pow_expr()?;
                 let span = (lhs.span.0, rhs.span.1);
                 Ok(ast::Expr {
@@ -442,8 +448,8 @@ fn test_parse_unary() {
             kind: ast::ItemKind::Expr(ast::Expr {
                 span: (0, 2),
                 kind: ast::ExprKind::UnOp(
-                    ast::UnOp::Minus, 
-                    Box::new(ast::Expr{
+                    ast::UnOp::Minus,
+                    Box::new(ast::Expr {
                         span: (1, 2),
                         kind: ast::ExprKind::Num(3.0),
                     }),
@@ -491,7 +497,7 @@ fn test_parse_2nd_order() {
                                 }),
                             )
                         }),
-                        Box::new(ast::Expr{
+                        Box::new(ast::Expr {
                             span: (12, 13),
                             kind: ast::ExprKind::Num(4.0),
                         })
@@ -640,7 +646,7 @@ fn fail_test_14_eq_12() {
 #[test]
 fn test_add_add_add() {
     let item: ast::Item = parse_line("1 + 2 + 3".chars()).unwrap();
-    
+
     assert_eq!(
         item,
         ast::Item {
@@ -676,7 +682,7 @@ fn test_add_add_add() {
 #[test]
 fn test_mul_mul_mul() {
     let item: ast::Item = parse_line("1 * 2 * 3".chars()).unwrap();
-    
+
     assert_eq!(
         item,
         ast::Item {

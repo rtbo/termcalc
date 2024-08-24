@@ -218,9 +218,13 @@ mod tests {
         fn default_max_relative() -> Self::Epsilon {
             f64::default_max_relative()
         }
-        fn relative_eq(&self, other: &Self, epsilon: Self::Epsilon, max_relative: Self::Epsilon) -> bool {
-            self.sym == other.sym
-                && self.val.relative_eq(&other.val, epsilon, max_relative)
+        fn relative_eq(
+            &self,
+            other: &Self,
+            epsilon: Self::Epsilon,
+            max_relative: Self::Epsilon,
+        ) -> bool {
+            self.sym == other.sym && self.val.relative_eq(&other.val, epsilon, max_relative)
         }
     }
 
@@ -229,8 +233,7 @@ mod tests {
             f64::default_max_ulps()
         }
         fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
-            self.sym == other.sym
-                && self.val.ulps_eq(&other.val, epsilon, max_ulps)
+            self.sym == other.sym && self.val.ulps_eq(&other.val, epsilon, max_ulps)
         }
     }
 

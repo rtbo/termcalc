@@ -175,7 +175,7 @@ where
                 }
                 TokenKind::Space
             }
-            _ => return Err(Error::InvalidChar((pos, pos+1), c)),
+            _ => return Err(Error::InvalidChar((pos, pos + 1), c)),
         };
         Ok(Some(kind))
     }
@@ -269,9 +269,7 @@ fn test_tokenize_in_band() {
 
 #[test]
 fn test_tokenize_sin_pi() {
-    let tokens: Vec<_> = tokenize("sin(pi)".chars())
-        .map(Result::unwrap)
-        .collect();
+    let tokens: Vec<_> = tokenize("sin(pi)".chars()).map(Result::unwrap).collect();
     assert_eq!(
         tokens,
         vec![
