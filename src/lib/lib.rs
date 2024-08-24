@@ -102,6 +102,17 @@ impl TermCalc {
     fn eval_item(&mut self, item: ast::Item) -> Result<Eval, Error> {
         let (sym, expr) = match item.kind {
             ast::ItemKind::Assign(sym, expr) => (sym, expr),
+            // if item is a single var, we return its name as evaluation symbol
+            ast::ItemKind::Expr(ast::Expr {
+                span,
+                kind: ast::ExprKind::Var(sym),
+            }) => (
+                sym.clone(),
+                ast::Expr {
+                    span,
+                    kind: ast::ExprKind::Var(sym),
+                },
+            ),
             ast::ItemKind::Expr(expr) => ("ans".to_string(), expr),
         };
 
