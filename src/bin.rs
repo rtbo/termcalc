@@ -14,6 +14,9 @@ If [EVALS] is not provided, program will enter interactive mode
 regardless of the --interactive switch.
     ";
 
+const MANUAL: &str = include_str!("../doc/gen/tc.1.ansi");
+const GRAMMAR: &str = include_str!("../doc/Grammar.ebnf");
+
 /// A simple Terminal Calculator
 #[derive(Parser, Debug)]
 #[command(name = "tc", version = VERSION, about = "tc - a simple Terminal Calculator", after_long_help = AFTER_HELP)]
@@ -25,6 +28,10 @@ struct Args {
     /// Strip output of evaluations to minimum
     #[arg(short = 's', long = "strip")]
     strip: bool,
+
+    /// Print the EBNF grammar reference
+    #[arg(short = 'g', long = "grammar")]
+    grammar: bool,
 
     /// Some evaluations
     evals: Vec<String>,
@@ -59,6 +66,14 @@ impl Args {
 
 fn main() -> ExitCode {
     let args = Args::parse();
+
+    if args.grammar {
+        println!("TC GRAMMAR");
+        println!("==========");
+        println!("");
+        println!("{}", GRAMMAR);
+        return ExitCode::SUCCESS;
+    }
 
     if args.strip && args.interactive {
         eprintln!("--strip cannot be used with --interactive");
@@ -138,9 +153,25 @@ impl Driver {
 
             if self.interactive {
                 let ll = line.to_lowercase();
-                if matches!(ll.as_str(), "exit" | "quit" | "q") {
-                    break;
+                match ll.as_str().trim() {
+                    "" => {
+                        self.print_prompt();
+                        continue;
+                    }
+                    "exit" | "quit" | "q" => break,
+                    "manual" => {
+                        println!("{}", MANUAL);
+                        self.print_prompt();
+                        continue;
+                    }
+                    "grammar" => {
+                        println!("{}", GRAMMAR);
+                        self.print_prompt();
+                        continue;
+                    }
+                    _ => (),
                 }
+               
             }
 
             match self.tc.eval_line(line.as_str()) {
