@@ -1,7 +1,6 @@
 use clap::Parser;
 use std::fmt::Display;
 use std::io::{self, BufRead, IsTerminal, Write};
-use std::mem;
 use std::process::ExitCode;
 use tc::TermCalc;
 use tc::{self, input::HasSpan};
@@ -112,18 +111,32 @@ impl Driver {
     }
 
     fn run(&mut self) -> ExitCode {
-        let arg_evals = mem::take(&mut self.arg_evals);
-        let num_arg_evals = arg_evals.len();
-        if self.interactive {
-            let lines = arg_evals
-                .into_iter()
-                .map(Result::Ok)
-                .chain(io::stdin().lock().lines());
-            self.line_loop(lines, num_arg_evals)
-        } else {
-            let lines = arg_evals.into_iter().map(Result::Ok);
+        let mut errs = 0;
+        for expr in self.arg_evals.as_slice() {
+            match self.tc.eval_line(expr.as_str()) {
+                Ok(eval) if self.strip => {
+                    println!("{}", eval.val);
+                }
+                Ok(eval) if eval.sym == "ans" => {
+                    println!("{} = {}", expr, eval.val);
+                }
+                Ok(eval) => {
+                    println!("{} = {}", eval.sym, eval.val);
+                }
+                Err(err) => {
+                    print_diagnostic(expr, &err);
+                    errs += 1;
+                }
+            }
+        }
+        if errs > 0 {
+            return ExitCode::from(errs);
+        }
 
-            self.line_loop(lines, num_arg_evals)
+        if self.interactive {
+            self.interactive_loop()
+        } else {
+            ExitCode::SUCCESS
         }
     }
 
@@ -132,17 +145,10 @@ impl Driver {
         io::stdout().flush().unwrap();
     }
 
-    fn line_loop<L>(&mut self, lines: L, num_arg_evals: usize) -> ExitCode
-    where
-        L: Iterator<Item = Result<String, io::Error>>,
-    {
-        if self.interactive {
-            self.print_prompt();
-        }
+    fn interactive_loop(&mut self) -> ExitCode {
+        self.print_prompt();
 
-        let mut num_arg_evals = num_arg_evals;
-
-        for line in lines {
+        for line in io::stdin().lock().lines() {
             let line = match line {
                 Ok(line) => line,
                 Err(err) => {
@@ -151,47 +157,29 @@ impl Driver {
                 }
             };
 
-            if self.interactive {
-                let ll = line.to_lowercase();
-                match ll.as_str().trim() {
-                    "" => {
-                        self.print_prompt();
-                        continue;
-                    }
-                    "exit" | "quit" | "q" => break,
-                    "manual" => {
-                        println!("{}", MANUAL);
-                        self.print_prompt();
-                        continue;
-                    }
-                    "grammar" => {
-                        println!("{}", GRAMMAR);
-                        self.print_prompt();
-                        continue;
-                    }
-                    _ => (),
+            let ll = line.to_lowercase();
+            match ll.as_str().trim() {
+                "" => {
+                    self.print_prompt();
+                    continue;
                 }
-               
+                "exit" | "quit" | "q" => break,
+                "manual" => {
+                    println!("{}", MANUAL);
+                    self.print_prompt();
+                    continue;
+                }
+                "grammar" => {
+                    println!("{}", GRAMMAR);
+                    self.print_prompt();
+                    continue;
+                }
+                _ => (),
             }
 
             match self.tc.eval_line(line.as_str()) {
                 Ok(eval) => {
-                    let from_stdin = num_arg_evals == 0;
-                    match (from_stdin, self.strip, self.interactive) {
-                        (false, false, false) => {
-                            println!("{} = {}", line, eval.val);
-                        }
-                        (false, false, true) => {
-                            println!("{} = {}", line, eval.val);
-                        }
-                        (false, true, false) => {
-                            println!("{}", eval.val);
-                        }
-                        (true, false, true) => {
-                            println!("{} = {}", eval.sym, eval.val);
-                        }
-                        _ => unreachable!("--strip with --interactive")
-                    }
+                    println!("{} = {}", eval.sym, eval.val);
                     io::stdout().flush().unwrap();
                     self.prompt += 1;
                 }
@@ -203,13 +191,7 @@ impl Driver {
                 }
             }
 
-            if num_arg_evals > 0 {
-                num_arg_evals -= 1;
-            }
-
-            if self.interactive {
-                self.print_prompt();
-            }
+            self.print_prompt();
         }
         ExitCode::SUCCESS
     }
