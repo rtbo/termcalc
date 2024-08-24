@@ -77,7 +77,7 @@ impl<I> Tokenizer<I> {
 
 impl<I> Tokenizer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = char> + Clone,
 {
     pub fn in_band(self) -> Filter<Tokenizer<I>, fn(&Result<Token>) -> bool> {
         self.filter(|tok| match tok {
@@ -92,14 +92,13 @@ where
     fn parse_num(&mut self, pos: Pos, first: char) -> Result<f64> {
         let mut s = String::from(first);
         loop {
-            let c = self.cursor.next();
+            let c = self.cursor.first();
             match c {
-                Some(c) if c.is_ascii_digit() || c == '.' => s.push(c),
-                Some(c) => {
-                    self.cursor.put_back(c);
-                    break;
+                Some(c) if c.is_ascii_digit() || c == '.' => {
+                    self.cursor.next();
+                    s.push(c)
                 }
-                None => break,
+                _ => break,
             }
         }
         match s.parse::<f64>() {
@@ -129,14 +128,13 @@ where
             '#' => {
                 let mut s = String::new();
                 loop {
-                    let c = self.cursor.next();
+                    let c = self.cursor.first();
                     match c {
-                        Some(c) if c != '\n' => s.push(c),
-                        Some(c) => {
-                            self.cursor.put_back(c);
-                            break;
+                        Some(c) if c != '\n' => {
+                            self.cursor.next();
+                            s.push(c)
                         }
-                        None => break,
+                        _ => break,
                     }
                 }
                 TokenKind::Comment(s)
@@ -149,28 +147,25 @@ where
                 let mut sym = String::new();
                 sym.push(c);
                 loop {
-                    let c = self.cursor.next();
+                    let c = self.cursor.first();
                     match c {
-                        Some(c @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_')) => sym.push(c),
-                        Some(c) => {
-                            self.cursor.put_back(c);
-                            break;
+                        Some(c @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_')) => {
+                            self.cursor.next();
+                            sym.push(c)
                         }
-                        None => break,
+                        _ => break,
                     }
                 }
                 TokenKind::Symbol(sym)
             }
             c if c.is_ascii_whitespace() => {
                 loop {
-                    let c = self.cursor.next();
+                    let c = self.cursor.first();
                     match c {
-                        Some(c) if c.is_ascii_whitespace() => (),
-                        Some(c) => {
-                            self.cursor.put_back(c);
-                            break;
+                        Some(c) if c.is_ascii_whitespace() => {
+                            self.cursor.next();
                         }
-                        None => break,
+                        _ => break,
                     }
                 }
                 TokenKind::Space
@@ -183,7 +178,7 @@ where
 
 impl<I> Iterator for Tokenizer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = char> + Clone,
 {
     type Item = Result<Token>;
 

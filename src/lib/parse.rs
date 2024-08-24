@@ -56,6 +56,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub fn parse_line<I>(chars: I) -> Result<ast::Item>
 where
     I: IntoIterator<Item = char>,
+    I::IntoIter: Clone,
 {
     let tokens = lex::tokenize(chars).in_band();
     Parser::new(tokens).parse_item()
