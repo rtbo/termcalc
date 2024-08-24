@@ -13,7 +13,7 @@ use crate::util;
 pub enum Error {
     Lex(lex::Error),
     UnexpectedEndOfInput(Span),
-    UnexpectedToken(Token, Option<TokenKind>),
+    UnexpectedToken(Token, Option<String>),
 }
 
 impl From<lex::Error> for Error {
@@ -42,7 +42,7 @@ impl Display for Error {
             Error::UnexpectedToken(tok, expected) => {
                 write!(f, "Unexpected token: {:?}", tok.kind)?;
                 if let Some(expected) = expected {
-                    write!(f, " (expected {:?})", expected)?;
+                    write!(f, " (expected {})", expected)?;
                 }
                 Ok(())
             }
@@ -92,7 +92,7 @@ where
             if tok.kind == kind {
                 Ok(tok.span)
             } else {
-                Err(Error::UnexpectedToken(tok, Some(kind)))
+                Err(Error::UnexpectedToken(tok, Some(format!("{:?}", kind))))
             }
         } else {
             let span = (self.last_span.1, self.last_span.1 + 2);
@@ -165,7 +165,7 @@ where
         };
         let tok = self.next_token()?;
         if let Some(tok) = tok {
-            return Err(Error::UnexpectedToken(tok, Some(TokenKind::NewLine)));
+            return Err(Error::UnexpectedToken(tok, Some("NewLine or Operator".to_string())));
         }
         item
     }
