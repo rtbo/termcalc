@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::fmt::Display;
-use std::io::{self, BufRead, IsTerminal, Write};
+use std::io::{self, BufRead, BufWriter, IsTerminal, Write};
 use std::process::ExitCode;
 use tc::TermCalc;
 use tc::{self, input::HasSpan};
@@ -86,7 +86,10 @@ fn main() -> ExitCode {
     if args.functions {
         println!("TC FUNCTIONS");
         println!("============");
-        print_functions();
+        if let Err(err) = print_functions() {
+            eprintln!("IO Error: {}", err);
+            return ExitCode::FAILURE;
+        }
         return ExitCode::SUCCESS;
     }
 
@@ -155,7 +158,6 @@ impl Driver {
                     self.print_diagnostic(expr, &err)
                 }
             };
-
             if let Err(err) = res {
                 eprintln!("IO Error: {}", err);
                 return ExitCode::FAILURE;
@@ -166,10 +168,13 @@ impl Driver {
         }
 
         if self.interactive {
-            self.interactive_loop()
-        } else {
-            ExitCode::SUCCESS
+            if let Err(err) = self.interactive_loop() {
+                eprintln!("IO Error: {}", err);
+                return ExitCode::FAILURE;
+            }
         }
+
+        ExitCode::SUCCESS
     }
 
     fn print_prompt(&self) {
@@ -183,17 +188,11 @@ impl Driver {
         io::stdout().flush().unwrap();
     }
 
-    fn interactive_loop(&mut self) -> ExitCode {
+    fn interactive_loop(&mut self) -> io::Result<()> {
         self.print_prompt();
 
         for line in io::stdin().lock().lines() {
-            let line = match line {
-                Ok(line) => line,
-                Err(err) => {
-                    eprintln!("IO Error: {}", err);
-                    return ExitCode::FAILURE;
-                }
-            };
+            let line = line?;
 
             let ll = line.to_lowercase();
             match ll.as_str().trim() {
@@ -203,15 +202,12 @@ impl Driver {
                 }
                 "exit" | "quit" | "q" => break,
                 "manual" | "man" => {
-                    if let Err(err) = print_manual() {
-                        eprintln!("IO Error: {}", err);
-                        return ExitCode::FAILURE;
-                    }
+                    page_manual()?;
                     self.print_prompt();
                     continue;
                 }
                 "functions" => {
-                    print_functions();
+                    page_functions()?;
                     self.print_prompt();
                     continue;
                 }
@@ -223,23 +219,19 @@ impl Driver {
                 _ => (),
             }
 
-            let res = match self.tc.eval_line(line.as_str()) {
+            match self.tc.eval_line(line.as_str()) {
                 Ok(eval) => {
                     self.prompt += 1;
                     println!("{} = {}", eval.sym, eval.val);
-                    io::stdout().flush()
+                    io::stdout().flush()?;
                 }
-                Err(err) => self.print_diagnostic(line.as_str(), &err),
+                Err(err) => self.print_diagnostic(line.as_str(), &err)?,
             };
-
-            if let Err(err) = res {
-                eprintln!("IO Error: {}", err);
-                return ExitCode::FAILURE;
-            }
 
             self.print_prompt();
         }
-        ExitCode::SUCCESS
+
+        Ok(())
     }
 
     fn print_diagnostic(&self, line: &str, err: &tc::Error) -> Result<(), io::Error> {
@@ -266,13 +258,41 @@ impl Driver {
     }
 }
 
-fn print_functions() {
-    use colored::{control, Colorize};
-    use tc::func;
+fn print_functions() -> io::Result<()> {
+    use colored::control::{self, SHOULD_COLORIZE};
 
-    if !io::stdout().is_terminal() {
-        control::set_override(false);
-    }
+    let color = io::stdout().is_terminal() && SHOULD_COLORIZE.should_colorize();
+    control::set_override(color);
+
+    let mut out = BufWriter::new(io::stdout().lock());
+    let res = write_functions(&mut out);
+
+    control::unset_override();
+
+    res?;
+    out.flush()
+}
+
+fn page_functions() -> io::Result<()> {
+    use colored::control::{self, SHOULD_COLORIZE};
+
+    let mut out = Vec::<u8>::new();
+
+    let color = io::stdout().is_terminal() && SHOULD_COLORIZE.should_colorize();
+    control::set_override(color);
+
+    let res = write_functions(&mut out);
+
+    control::unset_override();
+    res?;
+
+    let content = String::from_utf8(out).expect("functions page should be valid UTF-8");
+    page_content("TC Functions".to_string(), content)
+}
+
+fn write_functions<W: Write>(out: &mut W) -> io::Result<()> {
+    use colored::Colorize;
+    use tc::func;
 
     let mut cat = None;
 
@@ -282,32 +302,65 @@ fn print_functions() {
     for func in func::all_funcs() {
         if cat != Some(func.category) {
             let cat = func.category.to_string();
-            println!("{}:", cat.bold().blue());
+            writeln!(out, "{}:", cat.bold().blue())?;
         }
         cat = Some(func.category);
 
-        println!(
+        writeln!(
+            out,
             "    {}{}: {}",
             func.name.bold(),
             " ".repeat(max_len - func.name.len()),
             func.help
-        );
+        )?;
     }
 
-    control::unset_override();
+    Ok(())
 }
 
-fn print_manual() -> io::Result<()> {
+fn page_manual() -> io::Result<()> {
     use colored::control::SHOULD_COLORIZE;
-    use strip_ansi_escapes::Writer;
 
     let color = io::stdout().is_terminal() && SHOULD_COLORIZE.should_colorize();
-    if color {
-        println!("{}", MANUAL);
-        io::stdout().write_all(MANUAL.as_bytes())?;
+
+    let content = if color {
+        MANUAL.to_string()
     } else {
-        let mut writer = Writer::new(io::stdout());
-        writer.write_all(MANUAL.as_bytes())?;
-    }
-    io::stdout().flush()
+        strip_ansi_escapes::strip_str(MANUAL)
+    };
+
+    page_content("TC manual".to_string(), content)
+}
+
+fn page_content(title: String, content: String) -> io::Result<()> {
+    use crossterm::event::KeyCode;
+    use pager_rs::{Command, CommandList, CommandType, State, StatusBar};
+
+    let status_bar = StatusBar::new(title);
+    let mut state = State::new(
+        content,
+        status_bar,
+        CommandList::combine(vec![
+            CommandList::quit(),
+            CommandList::navigation(),
+            CommandList(vec![
+                Command {
+                    cmd: vec![CommandType::Key(KeyCode::Char('j'))],
+                    desc: "Cursor down".to_string(),
+                    func: &|state| state.down(),
+                },
+                Command {
+                    cmd: vec![CommandType::Key(KeyCode::Char('k'))],
+                    desc: "Cursor up".to_string(),
+                    func: &|state| state.up(),
+                },
+            ]),
+        ]),
+    )?;
+    state.show_line_numbers = false;
+
+    pager_rs::init()?;
+    pager_rs::run(&mut state)?;
+    pager_rs::finish()?;
+    Ok(())
 }

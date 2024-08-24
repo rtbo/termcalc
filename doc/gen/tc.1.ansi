@@ -32,9 +32,9 @@
 
        • [1mquit[22m, [1mq[22m, [1mexit[22m: exit the program
 
-       • [1mfunctions[22m: print the list of supported functions
+       • [1mfunctions[22m: page the list of supported functions
 
-       • [1mmanual[22m, [1mman[22m: print this manual
+       • [1mmanual[22m, [1mman[22m: page this manual
 
        • [1mgrammar[22m: print the EBNF grammar reference
 

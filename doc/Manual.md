@@ -37,8 +37,8 @@ and exit. This is useful to parse **tc**'s output from scripts.
 A set of special commands are available in the interactive shell:
 
 * `quit`, `q`, `exit`: exit the program
-* `functions`: print the list of supported functions
-* `manual`, `man`: print this manual
+* `functions`: page the list of supported functions
+* `manual`, `man`: page this manual
 * `grammar`: print the EBNF grammar reference
 
 ## Grammar
