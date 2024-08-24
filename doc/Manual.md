@@ -35,6 +35,8 @@ and exit. This is useful to parse **tc**'s output from scripts.
 A set of special commands are available in the interactive shell:
 
 * `quit`, `q`, `exit`: exit the program
+* `manual`: print this manual
+* `grammar`: print the EBNF grammar reference
 
 ## Grammar
 
@@ -50,6 +52,16 @@ expressions (see *examples* hereunder for a quick tuto).
 Assignment grammar is `variable = expression`.
 Once a variable is assigned, it can be reused in latter expressions.
 Variables `pi` and `e` are initialized at the start.
+Expressions that are not assigned to a user variable, are assigned to
+the special `ans` variable, which can also be reused in latter expressions
+like any other variable.
+
+The following operators are supported, listed in precedence order:
+
+* `^`
+* `+`, `-` (unary)
+* `*`, `/`, `%`
+* `+`, `-`
 
 A set of mathematical functions are provided, such as `sin`, `sqrt`, or `ln`.
 Trigonometric functions accept angles in radians only.
@@ -59,9 +71,9 @@ respectively.
 ### Examples
 
 * `4 + 3.5`
-* `0.124 * (6 + 12) / 3`
+* `0.124 * (ans + 12) / 3`
 * `4 * sin(2*pi/3)`
-* `angle = asin(0.15)`
+* `angle = asin(-0.15)`
 * `tan(angle)`
 * `e^(pi/3)`
 * `exp(pi/3)` (same result as previous expression)
@@ -74,6 +86,9 @@ respectively.
 
 **-s**, **--strip**
 :   Strip output of evaluations to minimum
+
+**-g**, **--grammar**
+:   Print the EBNF grammar reference
 
 **-h**, **--help**
 :   Print help (see a summary with **-h**)
