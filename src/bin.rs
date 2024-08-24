@@ -18,13 +18,13 @@ const GRAMMAR: &str = include_str!("../doc/Grammar.ebnf");
 
 #[derive(Debug)]
 enum ArgError {
-    NeedTerminal,
+    NotATerminal,
 }
 
 impl Display for ArgError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ArgError::NeedTerminal => write!(f, "--interactive requires terminal"),
+            ArgError::NotATerminal => write!(f, "--interactive requires terminal"),
         }
     }
 }
@@ -73,7 +73,7 @@ impl Args {
         let is_terminal = io::stdin().is_terminal();
 
         if self.interactive && !is_terminal {
-            return Err(ArgError::NeedTerminal);
+            return Err(ArgError::NotATerminal);
         }
 
         Ok((self.evals.is_empty() && is_terminal) || self.interactive)
