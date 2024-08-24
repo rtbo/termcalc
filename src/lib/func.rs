@@ -1,10 +1,20 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Category {
     General,
     PowerLog,
     Trigonometry,
+}
+
+impl Display for Category {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Category::General => write!(f, "General"),
+            Category::PowerLog => write!(f, "Power and Logarithms"),
+            Category::Trigonometry => write!(f, "Trigonometry"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

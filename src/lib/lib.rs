@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 mod ast;
-mod func;
+pub mod func;
 pub mod input;
 pub mod lex;
 pub mod parse;

@@ -28,6 +28,10 @@ struct Args {
     #[arg(short = 's', long = "strip")]
     strip: bool,
 
+    /// Print the list of supported functions
+    #[arg(short = 'f', long = "functions")]
+    functions: bool,
+
     /// Print the EBNF grammar reference
     #[arg(short = 'g', long = "grammar")]
     grammar: bool,
@@ -65,6 +69,13 @@ impl Args {
 
 fn main() -> ExitCode {
     let args = Args::parse();
+
+    if args.functions {
+        println!("TC FUNCTIONS");
+        println!("============");
+        print_functions();
+        return ExitCode::SUCCESS;
+    }
 
     if args.grammar {
         println!("TC GRAMMAR");
@@ -113,20 +124,28 @@ impl Driver {
     fn run(&mut self) -> ExitCode {
         let mut errs = 0;
         for expr in self.arg_evals.as_slice() {
-            match self.tc.eval_line(expr.as_str()) {
+            let res = match self.tc.eval_line(expr.as_str()) {
                 Ok(eval) if self.strip => {
                     println!("{}", eval.val);
+                    io::stdout().flush()
                 }
                 Ok(eval) if eval.sym == "ans" => {
                     println!("{} = {}", expr, eval.val);
+                    io::stdout().flush()
                 }
                 Ok(eval) => {
                     println!("{} = {}", eval.sym, eval.val);
+                    io::stdout().flush()
                 }
                 Err(err) => {
-                    print_diagnostic(expr, &err);
                     errs += 1;
+                    self.print_diagnostic(expr, &err)
                 }
+            };
+
+            if let Err(err) = res {
+                eprintln!("IO Error: {}", err);
+                return ExitCode::FAILURE;
             }
         }
         if errs > 0 {
@@ -141,7 +160,13 @@ impl Driver {
     }
 
     fn print_prompt(&self) {
-        print!("{}> ", self.prompt);
+        use colored::{control, Colorize};
+
+        if !io::stderr().is_terminal() {
+            control::set_override(false);
+        }
+
+        print!("{} ", format!("{}>", self.prompt).dimmed());
         io::stdout().flush().unwrap();
     }
 
@@ -164,8 +189,13 @@ impl Driver {
                     continue;
                 }
                 "exit" | "quit" | "q" => break,
-                "manual" => {
+                "manual" | "man" => {
                     println!("{}", MANUAL);
+                    self.print_prompt();
+                    continue;
+                }
+                "functions" => {
+                    print_functions();
                     self.print_prompt();
                     continue;
                 }
@@ -177,52 +207,78 @@ impl Driver {
                 _ => (),
             }
 
-            match self.tc.eval_line(line.as_str()) {
+            let res = match self.tc.eval_line(line.as_str()) {
                 Ok(eval) => {
-                    println!("{} = {}", eval.sym, eval.val);
-                    io::stdout().flush().unwrap();
                     self.prompt += 1;
+                    println!("{} = {}", eval.sym, eval.val);
+                    io::stdout().flush()
                 }
-                Err(err) => {
-                    print_diagnostic(line.as_str(), &err);
-                    if !self.interactive {
-                        return ExitCode::FAILURE;
-                    }
-                }
+                Err(err) => self.print_diagnostic(line.as_str(), &err),
+            };
+
+            if let Err(err) = res {
+                eprintln!("IO Error: {}", err);
+                return ExitCode::FAILURE;
             }
 
             self.print_prompt();
         }
         ExitCode::SUCCESS
     }
-}
 
-fn print_diagnostic(line: &str, err: &tc::Error) {
-    use colored::Colorize;
+    fn print_diagnostic(&self, line: &str, err: &tc::Error) -> Result<(), io::Error> {
+        use colored::{control, Colorize};
 
-    let span = err.span();
-    let msg = err.to_string();
-    let color = io::stderr().is_terminal();
+        let span = err.span();
+        let msg = err.to_string();
 
-    if color {
+        if !io::stderr().is_terminal() {
+            control::set_override(false);
+        }
+
         eprintln!("{}: {}", "error".red().bold(), msg);
-    } else {
-        eprintln!("error: {}", msg);
-    }
-    eprintln!("{line}");
-    if color {
+        eprintln!("{line}");
         eprintln!(
             "{}{}",
             " ".repeat(span.0 as _),
             "^".repeat((span.1 - span.0) as _).red().bold()
         );
-    } else {
-        eprintln!(
-            "{}{}",
-            " ".repeat(span.0 as _),
-            "^".repeat((span.1 - span.0) as _)
+
+        control::unset_override();
+
+        io::stderr().flush()
+    }
+}
+
+fn print_functions() {
+    use colored::{control, Colorize};
+    use tc::func;
+
+    if !io::stdout().is_terminal() {
+        control::set_override(false);
+    }
+
+    let mut cat = None;
+
+    let funcs = func::all_funcs();
+    let max_len = funcs.iter().map(|f| f.name.len()).max().unwrap_or(0);
+
+    for func in func::all_funcs() {
+        if cat != Some(func.category) {
+            let cat = func.category.to_string();
+            println!("{}:", cat.bold().blue());
+        }
+        cat = Some(func.category);
+
+        println!(
+            "    {}{}: {}",
+            func.name.bold(),
+            " ".repeat(max_len - func.name.len()),
+            func.help
         );
     }
+
+    control::unset_override();
 }
 
 #[derive(Debug)]
