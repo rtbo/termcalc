@@ -203,7 +203,10 @@ impl Driver {
                 }
                 "exit" | "quit" | "q" => break,
                 "manual" | "man" => {
-                    println!("{}", MANUAL);
+                    if let Err(err) = print_manual() {
+                        eprintln!("IO Error: {}", err);
+                        return ExitCode::FAILURE;
+                    }
                     self.print_prompt();
                     continue;
                 }
@@ -292,4 +295,19 @@ fn print_functions() {
     }
 
     control::unset_override();
+}
+
+fn print_manual() -> io::Result<()> {
+    use colored::control::SHOULD_COLORIZE;
+    use strip_ansi_escapes::Writer;
+
+    let color = io::stdout().is_terminal() && SHOULD_COLORIZE.should_colorize();
+    if color {
+        println!("{}", MANUAL);
+        io::stdout().write_all(MANUAL.as_bytes())?;
+    } else {
+        let mut writer = Writer::new(io::stdout());
+        writer.write_all(MANUAL.as_bytes())?;
+    }
+    io::stdout().flush()
 }
