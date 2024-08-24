@@ -1,0 +1,104 @@
+[4mTC[24m(1)                                                                    [4mTC[24m(1)
+
+[1mNAME[0m
+       [1mtc [22m- a simple Terminal Calculator
+
+[1mSYNOPSYS[0m
+       [1mtc [22m[[1m-i[22m|[1m–interactive[22m]
+          [[1m-s[22m|[1m–strip[22m]
+          [[1m-h[22m|[1m–help[22m]
+          [[1m-V[22m|[1m–version[22m]
+          [[4mEXPR[24m]...
+
+[1mDESCRIPTION[0m
+       [1mtc  [22mis a simple Terminal Calculator.  It can be provided expressions to
+       evaluate on the command line, or it can enter an interactive shell.
+
+       If expressions are provided on the command line, they will be evaluated
+       in order, and program will exit unless [1m–interactive [22mis specified.
+
+       If no expression argument is provided, program will  enter  interactive
+       mode regardless of the [1m–interactive [22mswitch.
+
+       The  [1m–strip  [22moption  is  only used for evaluation of expressions on the
+       command line.  If provided, [1mtc [22mwill print the bare result of evaluation
+       and exit.  This is useful to parse [1mtc[22m’s output from scripts.
+
+   [1mInteractive shell commands[0m
+       A set of special commands are available in the interactive shell:
+
+       • [1mquit[22m, [1mq[22m, [1mexit[22m: exit the program
+
+       • [1mmanual[22m: print this manual
+
+       • [1mgrammar[22m: print the EBNF grammar reference
+
+   [1mGrammar[0m
+       Whitespaces are ignored and comments can be entered,  starting  from  [1m#[0m
+       and spanning until the end of the line.
+
+       Each  evaluation  consists of one line which is either an expression or
+       an assignment.  All  expressions  are  evaluated  in  double  precision
+       floating point.
+
+       Expression  grammar is what you would generally expect for ASCII arith‐
+       metic expressions (see [4mexamples[24m hereunder for a quick tuto).
+
+       Assignment grammar is [1mvariable = expression[22m.  Once a  variable  is  as‐
+       signed, it can be reused in latter expressions.  Variables [1mpi [22mand [1me [22mare
+       initialized  at the start.  Expressions that are not assigned to a user
+       variable, are assigned to the special [1mans [22mvariable, which can  also  be
+       reused in latter expressions like any other variable.
+
+       The following operators are supported, listed in precedence order:
+
+       • [1m^[0m
+
+       • [1m+[22m, [1m- [22m(unary)
+
+       • [1m*[22m, [1m/[22m, [1m%[0m
+
+       • [1m+[22m, [1m-[0m
+
+       A set of mathematical functions are provided, such as [1msin[22m, [1msqrt[22m, or [1mln[22m.
+       Trigonometric  functions accept angles in radians only.  Functions [1mrads[0m
+       and [1mdegs [22mconvert to degrees to radians and radians to  degrees  respec‐
+       tively.
+
+   [1mExamples[0m
+       • [1m4 + 3.5[0m
+
+       • [1m0.124 * (ans + 12) / 3[0m
+
+       • [1m4 * sin(2*pi/3)[0m
+
+       • [1mangle = asin(-0.15)[0m
+
+       • [1mtan(angle)[0m
+
+       • [1me^(pi/3)[0m
+
+       • [1mexp(pi/3) [22m(same result as previous expression)
+
+       • [1mpow(e, pi/3) [22m(again same result)
+
+[1mOPTIONS[0m
+       [1m-i[22m, [1m–interactive[0m
+              Force to enter interactive mode
+
+       [1m-s[22m, [1m–strip[0m
+              Strip output of evaluations to minimum
+
+       [1m-g[22m, [1m–grammar[0m
+              Print the EBNF grammar reference
+
+       [1m-h[22m, [1m–help[0m
+              Print help (see a summary with [1m-h[22m)
+
+       [1m-V[22m, [1m–version[0m
+              Print version
+
+[1mAUTHORS[0m
+       Rémi THEBAULT.
+
+User Manual                    August 24th, 2024                         [4mTC[24m(1)
