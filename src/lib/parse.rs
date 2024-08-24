@@ -7,7 +7,6 @@ use std::fmt::Display;
 use crate::ast;
 use crate::input::{HasSpan, Span};
 use crate::lex::{self, Token, TokenKind};
-use crate::util;
 
 #[derive(Debug)]
 pub enum Error {
@@ -63,21 +62,15 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct Parser<T>
-where
-    T: Iterator<Item = lex::Result<Token>>,
-{
-    tokens: util::PutBack<T>,
+pub struct Parser<T> {
+    tokens: T,
     last_span: Span,
 }
 
-impl<T> Parser<T>
-where
-    T: Iterator<Item = lex::Result<Token>>,
-{
+impl<T> Parser<T> {
     pub fn new(tokens: T) -> Parser<T> {
         Parser {
-            tokens: util::put_back(tokens),
+            tokens,
             last_span: (0, 0),
         }
     }
@@ -85,7 +78,7 @@ where
 
 impl<T> Parser<T>
 where
-    T: Iterator<Item = lex::Result<Token>>,
+    T: Iterator<Item = lex::Result<Token>> + Clone,
 {
     fn expect_kind(&mut self, kind: TokenKind) -> Result<Span> {
         let tok = self.next_token()?;
@@ -100,23 +93,20 @@ where
             Err(Error::UnexpectedEndOfInput(span))
         }
     }
-
-    fn next_is_kind(&mut self, kind: TokenKind) -> Result<bool> {
-        let tok = self.next_token()?;
-        if let Some(tok) = tok {
-            let res = tok.kind == kind;
-            self.tokens.put_back(Ok(tok));
-            Ok(res)
-        } else {
-            Ok(false)
-        }
-    }
 }
 
 impl<T> Parser<T>
 where
-    T: Iterator<Item = lex::Result<Token>>,
+    T: Iterator<Item = lex::Result<Token>> + Clone,
 {
+    fn first_token(&self) -> lex::Result<Option<Token>> {
+        self.tokens.clone().next().transpose()
+    }
+
+    fn bump_token(&mut self) {
+        self.next_token().unwrap();
+    }
+
     fn next_token(&mut self) -> Result<Option<Token>> {
         let tok = self.tokens.next().transpose()?;
         if let Some(tok) = &tok {
@@ -126,14 +116,21 @@ where
     }
 
     fn parse_item(&mut self) -> Result<ast::Item> {
-        let tok = self.next_token()?;
-        let item = match tok {
+        let mut cl_toks = self.tokens.clone();
+        let tok1 = cl_toks.next().transpose()?;
+        let item = match tok1 {
             Some(Token {
                 kind: TokenKind::Symbol(sym),
                 span,
             }) => {
-                if self.next_is_kind(TokenKind::Equal)? {
-                    self.next_token()?; // eat '='
+                let tok2 = cl_toks.next().transpose()?;
+                if let Some(Token {
+                    kind: TokenKind::Equal,
+                    ..
+                }) = tok2
+                {
+                    self.bump_token(); // eat sym
+                    self.bump_token(); // eat =
                     let expr = self.parse_expr()?;
                     let span = (span.0, expr.span.1);
                     Ok(ast::Item {
@@ -141,10 +138,6 @@ where
                         span,
                     })
                 } else {
-                    self.tokens.put_back(Ok(Token {
-                        kind: TokenKind::Symbol(sym),
-                        span,
-                    }));
                     let expr = self.parse_expr()?;
                     let span = expr.span;
                     Ok(ast::Item {
@@ -153,8 +146,7 @@ where
                     })
                 }
             }
-            Some(tok) => {
-                self.tokens.put_back(Ok(tok));
+            Some(..) => {
                 let expr = self.parse_expr()?;
                 let span = expr.span;
                 Ok(ast::Item {
@@ -180,9 +172,10 @@ where
 
     fn parse_add_expr(&mut self) -> Result<ast::Expr> {
         let lhs = self.parse_mul_expr()?;
-        let tok = self.next_token()?;
+        let tok = self.first_token()?;
         match tok {
             Some(Token { kind, .. }) if is_add_op(&kind) => {
+                self.bump_token();
                 let rhs = self.parse_add_expr()?;
                 let span = (lhs.span.0, rhs.span.1);
                 Ok(ast::Expr {
@@ -190,19 +183,16 @@ where
                     span,
                 })
             }
-            Some(tok) => {
-                self.tokens.put_back(Ok(tok));
-                Ok(lhs)
-            }
             _ => Ok(lhs),
         }
     }
 
     fn parse_mul_expr(&mut self) -> Result<ast::Expr> {
         let lhs = self.parse_unary_expr()?;
-        let tok = self.next_token()?;
+        let tok = self.first_token()?;
         match tok {
             Some(Token { kind, .. }) if is_mul_op(&kind) => {
+                self.bump_token();
                 let rhs = self.parse_mul_expr()?;
                 let span = (lhs.span.0, rhs.span.1);
                 Ok(ast::Expr {
@@ -210,18 +200,15 @@ where
                     span,
                 })
             }
-            Some(tok) => {
-                self.tokens.put_back(Ok(tok));
-                Ok(lhs)
-            }
             _ => Ok(lhs),
         }
     }
 
     fn parse_unary_expr(&mut self) -> Result<ast::Expr> {
-        let tok = self.next_token()?;
+        let tok = self.first_token()?;
         match tok {
             Some(Token { kind, span }) if is_un_op(&kind) => {
+                self.bump_token();
                 let expr = self.parse_pow_expr()?;
                 let span = (span.0, expr.span.1);
                 Ok(ast::Expr {
@@ -229,23 +216,19 @@ where
                     span,
                 })
             }
-            _ => {
-                if let Some(tok) = tok {
-                    self.tokens.put_back(Ok(tok));
-                }
-                Ok(self.parse_pow_expr()?)
-            }
+            _ => Ok(self.parse_pow_expr()?),
         }
     }
 
     fn parse_pow_expr(&mut self) -> Result<ast::Expr> {
         let lhs = self.parse_primary()?;
-        let tok = self.next_token()?;
+        let tok = self.first_token()?;
         match tok {
             Some(Token {
                 kind: TokenKind::Hat,
                 ..
             }) => {
+                self.bump_token();
                 let rhs = self.parse_pow_expr()?;
                 let span = (lhs.span.0, rhs.span.1);
                 Ok(ast::Expr {
@@ -253,12 +236,7 @@ where
                     span,
                 })
             }
-            _ => {
-                if let Some(tok) = tok {
-                    self.tokens.put_back(Ok(tok));
-                }
-                Ok(lhs)
-            }
+            _ => Ok(lhs),
         }
     }
 
@@ -288,12 +266,13 @@ where
                 kind: TokenKind::Symbol(sym),
                 span: symspan,
             }) => {
-                let next = self.next_token()?;
+                let next = self.first_token()?;
                 match next {
                     Some(Token {
                         kind: TokenKind::OpenPar,
                         ..
                     }) => {
+                        self.bump_token();
                         let args = self.parse_arg_list()?;
                         let closespan = self.expect_kind(TokenKind::ClosePar)?;
                         let span = (symspan.0, closespan.1);
@@ -302,15 +281,10 @@ where
                             span,
                         })
                     }
-                    next => {
-                        if let Some(tok) = next {
-                            self.tokens.put_back(Ok(tok));
-                        }
-                        Ok(ast::Expr {
-                            kind: ast::ExprKind::Var(sym),
-                            span: symspan,
-                        })
-                    }
+                    _ => Ok(ast::Expr {
+                        kind: ast::ExprKind::Var(sym),
+                        span: symspan,
+                    }),
                 }
             }
             Some(tok) => Err(Error::UnexpectedToken(tok, None)),
@@ -321,24 +295,19 @@ where
     fn parse_arg_list(&mut self) -> Result<Vec<ast::Expr>> {
         let mut args = Vec::new();
         loop {
-            let tok = self.next_token()?;
+            let tok = self.first_token()?;
             match tok {
                 Some(Token {
                     kind: TokenKind::ClosePar,
-                    span,
+                    ..
                 }) => {
-                    self.tokens.put_back(Ok(Token {
-                        kind: TokenKind::ClosePar,
-                        span,
-                    }));
                     break;
                 }
                 Some(Token {
                     kind: TokenKind::Comma,
                     ..
                 }) => continue,
-                Some(tok) => {
-                    self.tokens.put_back(Ok(tok));
+                Some(..) => {
                     args.push(self.parse_expr()?);
                 }
                 None => return Err(Error::UnexpectedEndOfInput(self.eoi_span())),
@@ -384,6 +353,25 @@ fn un_op(kind: &TokenKind) -> ast::UnOp {
         TokenKind::Minus => ast::UnOp::Minus,
         _ => unreachable!(),
     }
+}
+
+#[test]
+fn test_parse_assignment() {
+    let item: ast::Item = parse_line("x = 2".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 5),
+            kind: ast::ItemKind::Assign(
+                "x".to_string(),
+                ast::Expr {
+                    span: (4, 5),
+                    kind: ast::ExprKind::Num(2.0),
+                }
+            )
+        }
+    )
 }
 
 #[test]

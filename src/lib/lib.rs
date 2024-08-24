@@ -5,7 +5,6 @@ pub mod func;
 pub mod input;
 pub mod lex;
 pub mod parse;
-mod util;
 
 use input::{HasSpan, Span};
 
