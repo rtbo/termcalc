@@ -13,15 +13,15 @@ pub trait HasSpan {
 /// It keeps track of the current position in the stream.
 /// It has the ability to put characters back into the stream.
 #[derive(Debug, Clone)]
-pub struct Cursor<T> {
+pub struct Cursor<I> {
     // input iterator
-    input: T,
+    input: I,
     // current position in the stream
     cur_pos: u32,
 }
 
-impl<T> Cursor<T> {
-    pub fn new(input: T) -> Cursor<T> {
+impl<I> Cursor<I> {
+    pub fn new(input: I) -> Cursor<I> {
         Cursor {
             input,
             cur_pos: 0,
@@ -33,13 +33,13 @@ impl<T> Cursor<T> {
     }
 }
 
-impl<T: Iterator<Item = char> + Clone> Cursor<T> {
+impl<I: Iterator<Item = char> + Clone> Cursor<I> {
     pub fn first(&self) -> Option<char> {
         self.input.clone().next()
     }
 }
 
-impl<T: Iterator<Item = char>> Iterator for Cursor<T> {
+impl<I: Iterator<Item = char>> Iterator for Cursor<I> {
     type Item = char;
     fn next(&mut self) -> Option<char> {
         let c = self.input.next();
