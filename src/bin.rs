@@ -1,9 +1,9 @@
 use clap::Parser;
 use std::fmt::Display;
-use std::io::{self, BufRead, BufWriter, IsTerminal, Write};
+use std::io::{self, BufWriter, IsTerminal, Write};
 use std::process::ExitCode;
-use tc::TermCalc;
-use tc::{self, input::HasSpan};
+
+use tc;
 
 mod doc;
 mod shell;
@@ -64,23 +64,24 @@ struct Args {
 }
 
 impl Args {
-    fn need_prompt(&self) -> Result<bool, ArgError> {
-        // If no evaluation is passed as argument, we enter interactive mode if we are connected to a terminal.
-        // If there is an evaluation, we want to enter interactive mode only if --interactive is specified.
-        // And if stdin is not connected to a terminal, we can't go interactive.
+    fn run_shell(&self) -> Result<bool, ArgError> {
+        // If no evaluation is passed as argument, we run the shell if we are connected to a terminal.
+        // If there is an evaluation, we want to run the shell only if --interactive is specified.
+        // And if some of stdio is redirected away from the terminal, we can't run the shell.
         //
         // Truth table is:
-        //  has_eval    |   interactive     |   is_terminal |   result
+        //  has_eval    |   interactive     |   is_terminal |   run_shell
         //  0           |   0               |   0           |   0
-        //  0           |   0               |   1           |   need_prompt
+        //  0           |   0               |   1           |   1
         //  0           |   1               |   0           |   error
-        //  0           |   1               |   1           |   need_prompt
+        //  0           |   1               |   1           |   1
         //  1           |   0               |   0           |   0
         //  1           |   0               |   1           |   0
         //  1           |   1               |   0           |   error
-        //  1           |   1               |   1           |   need_prompt
+        //  1           |   1               |   1           |   1
 
-        let is_terminal = io::stdin().is_terminal();
+        let is_terminal =
+            io::stdin().is_terminal() && io::stdout().is_terminal() && io::stderr().is_terminal();
 
         if self.interactive && !is_terminal {
             return Err(ArgError::NotATerminal);
@@ -139,8 +140,7 @@ fn main() -> ExitCode {
 }
 
 struct Driver {
-    tc: TermCalc,
-    prompt: u32,
+    tc: tc::TermCalc,
     interactive: bool,
     strip: bool,
     arg_evals: Vec<String>,
@@ -148,7 +148,7 @@ struct Driver {
 
 impl Driver {
     fn new(args: Args) -> Result<Driver, ArgError> {
-        let interactive = args.need_prompt()?;
+        let interactive = args.run_shell()?;
         Ok(Driver {
             tc: tc::TermCalc::new(),
             interactive,
