@@ -7,6 +7,8 @@ use crossterm::{
 };
 use tc::input::HasSpan;
 
+use crate::doc;
+
 pub struct Shell {
     tc: tc::TermCalc,
     prompt: u32,
@@ -102,13 +104,16 @@ impl Input {
             buf,
             cursor::MoveTo(self.pos.0, self.pos.1),
             terminal::Clear(terminal::ClearType::UntilNewLine),
-        )?; 
+        )?;
         let line = self.line();
         if line.starts_with(":") {
-            queue!(buf,
+            queue!(
+                buf,
                 style::Print(":"),
                 style::Print(line[1..].with(style::Color::Yellow)),
             )?;
+        } else {
+            queue!(buf, style::Print(line))?;
         }
         queue!(
             buf,
@@ -126,7 +131,7 @@ enum Cmd {
 }
 
 impl Cmd {
-    fn ends_input(&self) -> bool {
+    fn breaks_input(&self) -> bool {
         !matches!(self, Cmd::Loop)
     }
 }
@@ -134,19 +139,21 @@ impl Cmd {
 impl Shell {
     fn do_loop(&mut self) -> io::Result<()> {
         loop {
-            self.print_prompt();
+            let prompt_len = self.print_prompt();
 
             let mut input = Input::new(cursor::position()?, self.hist.clone());
 
             terminal::enable_raw_mode()?;
+
             loop {
                 let cmd = self.handle_event(&mut input)?;
                 input.render(&mut io::stdout())?;
 
-                if cmd.ends_input() {
+                if cmd.breaks_input() {
                     terminal::disable_raw_mode()?;
                     println!("");
                 }
+
                 match cmd {
                     Cmd::Loop => continue,
                     Cmd::Exit => return Ok(()),
@@ -159,15 +166,27 @@ impl Shell {
                                 break;
                             }
                             Err(err) => {
-                                self.print_diagnostic(&expr, &err)?;
+                                print_diagnostic(&err, prompt_len)?;
                                 break;
                             }
                         }
                     }
                     Cmd::Cmd(cmd) => match cmd.as_str() {
                         "exit" | "quit" | "q" => return Ok(()),
+                        "functions" => {
+                            page_functions()?;
+                            break;
+                        }
+                        "manual" | "man" => {
+                            page_manual()?;
+                            break;
+                        }
+                        "grammar" => {
+                            println!("{}", doc::GRAMMAR);
+                            break;
+                        }
                         _ => {
-                            eprintln!("Unknown command: {}", cmd);
+                            eprintln!("{}: Unknown command: {}", "error".red().bold(), cmd.bold());
                             break;
                         }
                     },
@@ -225,22 +244,82 @@ impl Shell {
 }
 
 impl Shell {
-    fn print_prompt(&self) {
-        print!("{} ", format!("{}>", self.prompt).dim());
+    fn print_prompt(&self) -> u32 {
+        let prompt = format!("{}>", self.prompt);
+        let len = prompt.len() as u32;
+        print!("{} ", prompt.dim());
+        len + 1
     }
+}
 
-    fn print_diagnostic(&self, expr: &str, err: &tc::Error) -> io::Result<()> {
-        let span = err.span();
-        let msg = err.to_string();
+pub fn print_diagnostic(err: &tc::Error, indent: u32) -> io::Result<()> {
+    let span = err.span();
 
-        eprintln!("{}: {}", "error".red().bold(), msg);
-        eprintln!("{expr}");
-        eprintln!(
-            "{}{}",
-            " ".repeat(span.0 as _),
-            "^".repeat((span.1 - span.0) as _).red().bold()
-        );
+    eprintln!(
+        "{}{}",
+        " ".repeat((indent + span.0) as _),
+        "^".repeat((span.1 - span.0) as _).red().bold()
+    );
+    eprintln!("{}: {}", "error".red().bold(), err.to_string().bold());
 
-        io::stderr().flush()
+    io::stderr().flush()
+}
+
+fn env_bool(name: &str) -> bool {
+    match std::env::var(name) {
+        Ok(val) => val != "0",
+        Err(_) => false,
     }
+}
+
+fn page_functions() -> io::Result<()> {
+    let mut out = Vec::<u8>::new();
+
+    doc::write_functions(&mut out)?;
+
+    let content = String::from_utf8(out).expect("functions page should be valid UTF-8");
+    page_content("TC Functions".to_string(), content)
+}
+
+fn page_manual() -> io::Result<()> {
+    let content = if env_bool("NO_COLOR") {
+        strip_ansi_escapes::strip_str(doc::MANUAL)
+    } else {
+        doc::MANUAL.to_string()
+    };
+
+    page_content("TC manual".to_string(), content)
+}
+
+fn page_content(title: String, content: String) -> io::Result<()> {
+    use crossterm::event::KeyCode;
+    use pager_rs::{Command, CommandList, CommandType, State, StatusBar};
+
+    let status_bar = StatusBar::new(title);
+    let mut state = State::new(
+        content,
+        status_bar,
+        CommandList::combine(vec![
+            CommandList::quit(),
+            CommandList::navigation(),
+            CommandList(vec![
+                Command {
+                    cmd: vec![CommandType::Key(KeyCode::Char('j'))],
+                    desc: "Cursor down".to_string(),
+                    func: &|state| state.down(),
+                },
+                Command {
+                    cmd: vec![CommandType::Key(KeyCode::Char('k'))],
+                    desc: "Cursor up".to_string(),
+                    func: &|state| state.up(),
+                },
+            ]),
+        ]),
+    )?;
+    state.show_line_numbers = false;
+
+    pager_rs::init()?;
+    pager_rs::run(&mut state)?;
+    pager_rs::finish()?;
+    Ok(())
 }
