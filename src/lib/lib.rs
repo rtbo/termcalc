@@ -80,6 +80,12 @@ pub struct TermCalc {
     funcs: HashMap<String, func::Func>,
 }
 
+impl Default for TermCalc {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TermCalc {
     pub fn new() -> Self {
         let mut vars = HashMap::new();

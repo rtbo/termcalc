@@ -3,8 +3,6 @@ use std::fmt::Display;
 use std::io::{self, BufWriter, IsTerminal, Write};
 use std::process::ExitCode;
 
-use tc;
-
 mod doc;
 mod shell;
 
@@ -107,7 +105,7 @@ fn main() -> ExitCode {
     if args.grammar {
         println!("TC GRAMMAR");
         println!("==========");
-        println!("");
+        println!();
         println!("{}", doc::GRAMMAR);
         return ExitCode::SUCCESS;
     }

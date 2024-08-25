@@ -28,27 +28,6 @@ impl Shell {
 
     pub fn main_loop(&mut self) -> io::Result<()> {
         self.size = terminal::size()?;
-        let res = self.do_loop();
-        res
-    }
-}
-
-enum Cmd {
-    Loop,
-    Exit,
-    Empty,
-    Eval(String),
-    Cmd(String),
-}
-
-impl Cmd {
-    fn breaks_input(&self) -> bool {
-        !matches!(self, Cmd::Loop)
-    }
-}
-
-impl Shell {
-    fn do_loop(&mut self) -> io::Result<()> {
         loop {
             let prompt_len = self.print_prompt();
 
@@ -62,7 +41,7 @@ impl Shell {
 
                 if cmd.breaks_input() {
                     terminal::disable_raw_mode()?;
-                    println!("");
+                    println!();
                 }
 
                 match cmd {
@@ -106,7 +85,23 @@ impl Shell {
             }
         }
     }
+}
 
+enum Cmd {
+    Loop,
+    Exit,
+    Empty,
+    Eval(String),
+    Cmd(String),
+}
+
+impl Cmd {
+    fn breaks_input(&self) -> bool {
+        !matches!(self, Cmd::Loop)
+    }
+}
+
+impl Shell {
     fn handle_event(&mut self, input: &mut LineInput) -> io::Result<Cmd> {
         let ev = event::read()?;
         match ev {

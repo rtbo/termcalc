@@ -80,12 +80,14 @@ where
     I: Iterator<Item = char> + Clone,
 {
     pub fn in_band(self) -> Filter<Tokenizer<I>, fn(&Result<Token>) -> bool> {
-        self.filter(|tok| match tok {
-            Ok(Token {
-                kind: TokenKind::Comment(_) | TokenKind::Space,
-                ..
-            }) => false,
-            _ => true,
+        self.filter(|tok| {
+            !matches!(
+                tok,
+                Ok(Token {
+                    kind: TokenKind::Space | TokenKind::Comment(..),
+                    ..
+                })
+            )
         })
     }
 
