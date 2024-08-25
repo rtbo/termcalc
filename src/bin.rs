@@ -5,6 +5,8 @@ use std::process::ExitCode;
 use tc::TermCalc;
 use tc::{self, input::HasSpan};
 
+mod shell;
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const AFTER_HELP: &str = "If [EVALS] if provided, passed arguments will be evaluated,
 and program will exit unless --interactive is specified.
@@ -159,7 +161,7 @@ impl Driver {
         })
     }
 
-    fn run(&mut self) -> Result<(), RunError> {
+    fn run(mut self) -> Result<(), RunError> {
         for expr in self.arg_evals.as_slice() {
             let eval = match self.tc.eval_line(expr.as_str()) {
                 Ok(eval) => eval,
@@ -178,7 +180,9 @@ impl Driver {
         }
 
         if self.interactive {
-            self.interactive_loop()?;
+            let mut sh = shell::Shell::new(self.tc);
+            sh.main_loop()?;
+            //self.interactive_loop()?;
         }
 
         Ok(())
