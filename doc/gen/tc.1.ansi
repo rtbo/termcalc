@@ -27,16 +27,25 @@
        command line.  If provided, [1mtc [22mwill print the bare result of evaluation
        and exit.  This is useful to parse [1mtc[22m’s output from scripts.
 
-   [1mInteractive shell commands[0m
-       A set of special commands are available in the interactive shell:
+   [1mInteractive shell usage[0m
+       When  prompted, user can type expressions (with or without assignment).
+       The expression is evaluated when ENTER is pressed.
 
-       • [1mquit[22m, [1mq[22m, [1mexit[22m: exit the program
+       Up and Down keys navigate in the expression history.   Left  and  Right
+       keys move the cursor in the expression.
 
-       • [1mfunctions[22m: page the list of supported functions
+       A set of special `:' prefixed commands are available in the interactive
+       shell:
 
-       • [1mmanual[22m, [1mman[22m: page this manual
+       • [1m:quit[22m, [1m:q[22m, [1m:exit[22m: exit the program
 
-       • [1mgrammar[22m: print the EBNF grammar reference
+       • [1m:functions[22m: page the list of supported functions
+
+       • [1m:manual[22m, [1m:man[22m: page this manual
+
+       • [1m:grammar[22m: print the EBNF grammar reference
+
+       Pressing Ctrl-C or ESC key will exit the shell.
 
    [1mGrammar[0m
        Whitespaces  are  ignored  and comments can be entered, starting from [1m#[0m
