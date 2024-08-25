@@ -32,14 +32,22 @@ The **--strip** option is only used for evaluation of expressions on the
 command line. If provided, **tc** will print the bare result of evaluation
 and exit. This is useful to parse **tc**'s output from scripts.
 
-## Interactive shell commands
+## Interactive shell usage
 
-A set of special commands are available in the interactive shell:
+When prompted, user can type expressions (with or without assignment).
+The expression is evaluated when ENTER is pressed.
 
-* `quit`, `q`, `exit`: exit the program
-* `functions`: page the list of supported functions
-* `manual`, `man`: page this manual
-* `grammar`: print the EBNF grammar reference
+Up and Down keys navigate in the expression history.
+Left and Right keys move the cursor in the expression.
+
+A set of special ':' prefixed commands are available in the interactive shell:
+
+* `:quit`, `:q`, `:exit`: exit the program
+* `:functions`: page the list of supported functions
+* `:manual`, `:man`: page this manual
+* `:grammar`: print the EBNF grammar reference
+
+Pressing Ctrl-C or ESC key will exit the shell.
 
 ## Grammar
 
