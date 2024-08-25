@@ -28,3 +28,13 @@ strip-ansi-escapes = "0.2.0"
 
 [dev-dependencies]
 approx = "0.5.1"
+
+[package.metadata.deb]
+section = "math"
+assets = [
+  ["target/release/tc", "usr/bin/", "755"],
+  ["UNLICENSE", "usr/share/doc/tc/", "644"],
+  ["LICENSE-MIT", "usr/share/doc/tc/", "644"],
+  ["ReadMe.md", "usr/share/doc/tc/README", "644"],
+  ["doc/gen/tc.1.gz", "usr/share/man/man1/tc.1.gz", "644"],
+]
