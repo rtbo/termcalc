@@ -61,7 +61,7 @@ impl Input {
         &self.stack[self.stack_idx]
     }
 
-    fn typechar(&mut self, c: char) {
+    fn type_char(&mut self, c: char) {
         self.stack[self.stack_idx].insert(self.hpos, c);
         self.hpos += 1;
     }
@@ -228,7 +228,7 @@ impl Shell {
                     return Ok(Cmd::Exit);
                 }
                 event::KeyCode::Char(c) => {
-                    input.typechar(c);
+                    input.type_char(c);
                 }
                 event::KeyCode::Enter => {
                     if input.line().trim().is_empty() {
