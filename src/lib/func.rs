@@ -116,14 +116,14 @@ pub fn all_funcs() -> Vec<Func> {
         Func {
             category: Category::General,
             name: "trunc".to_string(),
-            help: "truncate value to its integer part (always towards zero)".to_string(),
+            help: "truncate value to its integer part (round towards zero)".to_string(),
             arg_count: ArgCount::One,
             eval: |args| args.first().trunc(),
         },
         Func {
             category: Category::General,
             name: "fract".to_string(),
-            help: "compute fractional part of the value".to_string(),
+            help: "truncate value to its fractional part".to_string(),
             arg_count: ArgCount::One,
             eval: |args| args.first().fract(),
         },
