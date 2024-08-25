@@ -126,6 +126,7 @@ impl Input {
 enum Cmd {
     Loop,
     Exit,
+    Empty,
     Eval(String),
     Cmd(String),
 }
@@ -157,6 +158,7 @@ impl Shell {
                 match cmd {
                     Cmd::Loop => continue,
                     Cmd::Exit => return Ok(()),
+                    Cmd::Empty => break,
                     Cmd::Eval(expr) => {
                         self.hist.push(expr.clone());
                         match self.tc.eval_line(expr.as_str()) {
@@ -229,7 +231,9 @@ impl Shell {
                     input.typechar(c);
                 }
                 event::KeyCode::Enter => {
-                    if input.line().starts_with(":") {
+                    if input.line().trim().is_empty() {
+                        return Ok(Cmd::Empty);
+                    } else if input.line().starts_with(":") {
                         return Ok(Cmd::Cmd(input.line()[1..].to_string()));
                     } else {
                         return Ok(Cmd::Eval(input.line().to_string()));
