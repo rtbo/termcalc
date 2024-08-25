@@ -39,10 +39,10 @@ impl Display for Error {
         match self {
             Error::Parse(err) => err.fmt(f),
             Error::UnknownVar(_, name) => {
-                write!(f, "Unknown variable: {name}")
+                write!(f, "Variable `{name}` is unknown")
             }
             Error::UnknownFunc(_, name) => {
-                write!(f, "Unknown function: {name}")
+                write!(f, "Function `{name}` is unknown")
             }
             Error::FuncArgCount {
                 name,
@@ -52,7 +52,7 @@ impl Display for Error {
             } => {
                 write!(
                     f,
-                    "Function {name} expects {expected}, but received {actual}"
+                    "Function `{name}` expects {expected}, but received {actual}"
                 )
             }
             Error::ZeroDiv(_) => {
