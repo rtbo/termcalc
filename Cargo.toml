@@ -1,7 +1,15 @@
 [package]
 name = "termcalc"
 version = "0.1.0"
-description = "a simple Terminal Calculator"
+authors = ["Rémi THEBAULT <remi.thebault@gmail.com>"]
+license = "Unlicense or MIT"
+description = "tc is a simple Terminal Calculator"
+homepage = "https://github.com/rtbo/termcalc"
+repository = "https://github.com/rtbo/termcalc"
+documentation = "https://github.com/rtbo/termcalc"
+readme = "ReadMe.md"
+keywords = ["calculator", "terminal", "cli"]
+categories = ["command-line-utilities", "math", "calculator"]
 edition = "2021"
 
 [lib]
