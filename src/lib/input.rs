@@ -22,10 +22,7 @@ pub struct Cursor<I> {
 
 impl<I> Cursor<I> {
     pub fn new(input: I) -> Cursor<I> {
-        Cursor {
-            input,
-            cur_pos: 0,
-        }
+        Cursor { input, cur_pos: 0 }
     }
 
     pub fn pos(&self) -> Pos {
