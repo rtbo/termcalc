@@ -33,7 +33,131 @@ impl Shell {
     }
 }
 
-struct Input {
+enum Cmd {
+    Loop,
+    Exit,
+    Empty,
+    Eval(String),
+    Cmd(String),
+}
+
+impl Cmd {
+    fn breaks_input(&self) -> bool {
+        !matches!(self, Cmd::Loop)
+    }
+}
+
+impl Shell {
+    fn do_loop(&mut self) -> io::Result<()> {
+        loop {
+            let prompt_len = self.print_prompt();
+
+            let mut input = LineInput::new(cursor::position()?, self.hist.clone());
+
+            terminal::enable_raw_mode()?;
+
+            loop {
+                let cmd = self.handle_event(&mut input)?;
+                input.render(&mut io::stdout())?;
+
+                if cmd.breaks_input() {
+                    terminal::disable_raw_mode()?;
+                    println!("");
+                }
+
+                match cmd {
+                    Cmd::Loop => continue,
+                    Cmd::Exit => return Ok(()),
+                    Cmd::Empty => break,
+                    Cmd::Eval(expr) => {
+                        self.hist.push(expr.clone());
+                        match self.tc.eval_line(expr.as_str()) {
+                            Ok(tc::Eval { sym, val }) => {
+                                println!("{} = {}", sym, val);
+                                self.prompt += 1;
+                                break;
+                            }
+                            Err(err) => {
+                                print_diagnostic(&err, prompt_len)?;
+                                break;
+                            }
+                        }
+                    }
+                    Cmd::Cmd(cmd) => match cmd.as_str() {
+                        "exit" | "quit" | "q" => return Ok(()),
+                        "functions" => {
+                            page_functions()?;
+                            break;
+                        }
+                        "manual" | "man" => {
+                            page_manual()?;
+                            break;
+                        }
+                        "grammar" => {
+                            println!("{}", doc::GRAMMAR);
+                            break;
+                        }
+                        _ => {
+                            eprintln!("{}: Unknown command: {}", "error".red().bold(), cmd.bold());
+                            break;
+                        }
+                    },
+                }
+            }
+        }
+    }
+
+    fn handle_event(&mut self, input: &mut LineInput) -> io::Result<Cmd> {
+        let ev = event::read()?;
+        match ev {
+            event::Event::Resize(w, h) => self.size = (w, h),
+            event::Event::Key(event::KeyEvent {
+                code, modifiers, ..
+            }) => match code {
+                event::KeyCode::Left => {
+                    input.left();
+                }
+                event::KeyCode::Right => {
+                    input.right();
+                }
+                event::KeyCode::Up => {
+                    input.up();
+                }
+                event::KeyCode::Down => {
+                    input.down();
+                }
+                event::KeyCode::Backspace => {
+                    input.backspace();
+                }
+                event::KeyCode::Char(c)
+                    if c == 'c' && modifiers.contains(event::KeyModifiers::CONTROL) =>
+                {
+                    return Ok(Cmd::Exit);
+                }
+                event::KeyCode::Esc => {
+                    return Ok(Cmd::Exit);
+                }
+                event::KeyCode::Char(c) => {
+                    input.type_char(c);
+                }
+                event::KeyCode::Enter => {
+                    if input.line().trim().is_empty() {
+                        return Ok(Cmd::Empty);
+                    } else if input.line().starts_with(":") {
+                        return Ok(Cmd::Cmd(input.line()[1..].to_string()));
+                    } else {
+                        return Ok(Cmd::Eval(input.line().to_string()));
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+        Ok(Cmd::Loop)
+    }
+}
+
+struct LineInput {
     /// start position of the cursor
     pos: (u16, u16),
     /// horizontal position of the cursor
@@ -45,7 +169,7 @@ struct Input {
     stack: Vec<String>,
 }
 
-impl Input {
+impl LineInput {
     fn new(pos: (u16, u16), hist: Vec<String>) -> Self {
         let mut stack = hist;
         stack.push(String::new());
@@ -120,130 +244,6 @@ impl Input {
             cursor::MoveTo(self.pos.0 + self.hpos as u16, self.pos.1),
         )?;
         buf.flush()
-    }
-}
-
-enum Cmd {
-    Loop,
-    Exit,
-    Empty,
-    Eval(String),
-    Cmd(String),
-}
-
-impl Cmd {
-    fn breaks_input(&self) -> bool {
-        !matches!(self, Cmd::Loop)
-    }
-}
-
-impl Shell {
-    fn do_loop(&mut self) -> io::Result<()> {
-        loop {
-            let prompt_len = self.print_prompt();
-
-            let mut input = Input::new(cursor::position()?, self.hist.clone());
-
-            terminal::enable_raw_mode()?;
-
-            loop {
-                let cmd = self.handle_event(&mut input)?;
-                input.render(&mut io::stdout())?;
-
-                if cmd.breaks_input() {
-                    terminal::disable_raw_mode()?;
-                    println!("");
-                }
-
-                match cmd {
-                    Cmd::Loop => continue,
-                    Cmd::Exit => return Ok(()),
-                    Cmd::Empty => break,
-                    Cmd::Eval(expr) => {
-                        self.hist.push(expr.clone());
-                        match self.tc.eval_line(expr.as_str()) {
-                            Ok(tc::Eval { sym, val }) => {
-                                println!("{} = {}", sym, val);
-                                self.prompt += 1;
-                                break;
-                            }
-                            Err(err) => {
-                                print_diagnostic(&err, prompt_len)?;
-                                break;
-                            }
-                        }
-                    }
-                    Cmd::Cmd(cmd) => match cmd.as_str() {
-                        "exit" | "quit" | "q" => return Ok(()),
-                        "functions" => {
-                            page_functions()?;
-                            break;
-                        }
-                        "manual" | "man" => {
-                            page_manual()?;
-                            break;
-                        }
-                        "grammar" => {
-                            println!("{}", doc::GRAMMAR);
-                            break;
-                        }
-                        _ => {
-                            eprintln!("{}: Unknown command: {}", "error".red().bold(), cmd.bold());
-                            break;
-                        }
-                    },
-                }
-            }
-        }
-    }
-
-    fn handle_event(&mut self, input: &mut Input) -> io::Result<Cmd> {
-        let ev = event::read()?;
-        match ev {
-            event::Event::Resize(w, h) => self.size = (w, h),
-            event::Event::Key(event::KeyEvent {
-                code, modifiers, ..
-            }) => match code {
-                event::KeyCode::Left => {
-                    input.left();
-                }
-                event::KeyCode::Right => {
-                    input.right();
-                }
-                event::KeyCode::Up => {
-                    input.up();
-                }
-                event::KeyCode::Down => {
-                    input.down();
-                }
-                event::KeyCode::Backspace => {
-                    input.backspace();
-                }
-                event::KeyCode::Char(c)
-                    if c == 'c' && modifiers.contains(event::KeyModifiers::CONTROL) =>
-                {
-                    return Ok(Cmd::Exit);
-                }
-                event::KeyCode::Esc => {
-                    return Ok(Cmd::Exit);
-                }
-                event::KeyCode::Char(c) => {
-                    input.type_char(c);
-                }
-                event::KeyCode::Enter => {
-                    if input.line().trim().is_empty() {
-                        return Ok(Cmd::Empty);
-                    } else if input.line().starts_with(":") {
-                        return Ok(Cmd::Cmd(input.line()[1..].to_string()));
-                    } else {
-                        return Ok(Cmd::Eval(input.line().to_string()));
-                    }
-                }
-                _ => {}
-            },
-            _ => {}
-        }
-        Ok(Cmd::Loop)
     }
 }
 
