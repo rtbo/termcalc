@@ -1,4 +1,4 @@
-tc-line         ::= item, EOL;
+tc-line         ::= item, EOL ;
 item            ::= assignment | expr ;
 assignment      ::= identifier '=' expr ;
 identifier      ::= [a-zA-Z_][a-zA-Z_0-9]* ;
