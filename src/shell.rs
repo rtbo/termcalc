@@ -30,8 +30,11 @@ impl Shell {
         self.size = terminal::size()?;
         loop {
             let prompt_len = self.print_prompt();
-
-            let mut input = LineInput::new(cursor::position()?, self.hist.clone());
+            let pos = cursor::position()?;
+            // on windows, position returns the correct line, 
+            // but column is 0 despite just printing the prompt
+            // so we use prompt_len instead.
+            let mut input = LineInput::new((prompt_len as u16, pos.1), self.hist.clone());
 
             terminal::enable_raw_mode()?;
 
