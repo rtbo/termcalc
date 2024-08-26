@@ -1,7 +1,9 @@
 use std::io::{self, Write};
 
 use crossterm::{
-    cursor, event, queue,
+    cursor,
+    event::{self, KeyEventKind},
+    queue,
     style::{self, Stylize},
     terminal,
 };
@@ -110,7 +112,10 @@ impl Shell {
         match ev {
             event::Event::Resize(w, h) => self.size = (w, h),
             event::Event::Key(event::KeyEvent {
-                code, modifiers, ..
+                code,
+                modifiers,
+                kind: KeyEventKind::Press,
+                ..
             }) => match code {
                 event::KeyCode::Left => {
                     input.left();
