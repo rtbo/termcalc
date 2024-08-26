@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::fmt::Display;
-use std::io::{self, BufWriter, IsTerminal, Write};
+use std::io::{self, BufRead, BufWriter, IsTerminal, Write};
+use std::mem;
 use std::process::ExitCode;
 
 mod doc;
@@ -156,21 +157,14 @@ impl Driver {
     }
 
     fn run(mut self) -> Result<(), RunError> {
-        for expr in self.arg_evals.as_slice() {
-            let eval = match self.tc.eval_line(expr.as_str()) {
-                Ok(eval) => eval,
-                Err(err) => {
-                    return Err(RunError::Tc(expr.to_string(), err));
-                }
-            };
-            if self.strip {
-                println!("{}", eval.val);
-            } else if eval.sym == "ans" {
-                println!("{} = {}", expr, eval.val);
-            } else {
-                println!("{} = {}", eval.sym, eval.val);
-            }
-            io::stdout().flush()?;
+        let arg_evals = mem::take(&mut self.arg_evals);
+        let arg_evals = arg_evals.into_iter().map(Result::Ok);
+        if io::stdin().is_terminal() {
+            self.process_non_interactive(arg_evals)?;
+        } else {
+            // file input (`tc < file`)
+            let all_lines = arg_evals.chain(io::stdin().lock().lines());
+            self.process_non_interactive(all_lines)?;
         }
 
         if self.interactive {
@@ -178,6 +172,30 @@ impl Driver {
             sh.main_loop()?;
         }
 
+        Ok(())
+    }
+
+    fn process_non_interactive<I>(&mut self, lines: I) -> Result<(), RunError>
+    where
+        I: Iterator<Item = io::Result<String>>,
+    {
+        for line in lines {
+            let line = line?;
+            let eval = match self.tc.eval_line(&line) {
+                Ok(eval) => eval,
+                Err(err) => {
+                    return Err(RunError::Tc(line, err));
+                }
+            };
+            if self.strip {
+                println!("{}", eval.val);
+            } else if eval.sym == "ans" {
+                println!("{} = {}", line, eval.val);
+            } else {
+                println!("{} = {}", eval.sym, eval.val);
+            }
+            io::stdout().flush()?;
+        }
         Ok(())
     }
 }
