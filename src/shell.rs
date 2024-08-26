@@ -92,6 +92,7 @@ impl Shell {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 enum Cmd {
     Loop,
     Exit,
