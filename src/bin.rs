@@ -201,7 +201,9 @@ impl Driver {
 }
 
 fn print_functions() -> io::Result<()> {
-    let mut out = BufWriter::new(io::stdout().lock());
-    doc::write_functions(&mut out)?;
+    let stdout = io::stdout().lock();
+    let style = stdout.is_terminal();
+    let mut out = BufWriter::new(stdout);
+    doc::write_functions(&mut out, style)?;
     out.flush()
 }

@@ -1,0 +1,41 @@
+TC FUNCTIONS
+============
+General:
+    floor: floor value to lower integer
+    round: round value to nearest integer
+    ceil : ceil value to upper integer
+    trunc: truncate value to its integer part (round towards zero)
+    fract: truncate value to its fractional part
+    abs  : compute absolute value
+    sign : value sign (1 or -1)
+    min  : minimum of all arguments
+    max  : maximum of all arguments
+
+Power and Logarithms:
+    pow  : first argument raised to the power the second argument
+    sqrt : square root
+    cbrt : cubic root
+    exp  : exponential function (exp(x) = pow(e, x))
+    log  : log(b, x) is base b logarithm of x
+    ln   : natural logarithm
+    log2 : base 2 logarithm
+    log10: base 10 logarithm
+
+Trigonometry:
+    sin  : sine function
+    cos  : cosine function
+    tan  : tangent function
+    csc  : cosecante function (inverse of sine)
+    sec  : secante function (inverse of cosine)
+    cot  : cotangent function (inverse of tangent)
+    asin : arc sine function
+    acos : arc cosine function
+    atan : arc tangent function
+    sinh : hyperbolic sine function
+    cosh : hyperbolic cosine function
+    tanh : hyperbolic tangent function
+    asinh: hyperbolic arc sine function
+    acosh: hyperbolic arc cosine function
+    atanh: hyperbolic arc tangent function
+    degs : convert radians to degrees
+    rads : convert degrees to radians

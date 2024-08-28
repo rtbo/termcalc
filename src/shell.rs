@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 
 use crossterm::{
     cursor,
@@ -33,7 +33,7 @@ impl Shell {
         loop {
             let prompt_len = self.print_prompt();
             let pos = cursor::position()?;
-            // on windows, position returns the correct line, 
+            // on windows, position returns the correct line,
             // but column is 0 despite just printing the prompt
             // so we use prompt_len instead.
             let mut input = LineInput::new((prompt_len as u16, pos.1), self.hist.clone());
@@ -262,13 +262,17 @@ impl Shell {
 
 pub fn print_diagnostic(err: &tc::Error, indent: u32) -> io::Result<()> {
     let span = err.span();
+    let space = " ".repeat((indent + span.0) as _);
+    let marker = "^".repeat((span.1 - span.0) as _);
+    let msg = err.to_string();
 
-    eprintln!(
-        "{}{}",
-        " ".repeat((indent + span.0) as _),
-        "^".repeat((span.1 - span.0) as _).red().bold()
-    );
-    eprintln!("{}: {}", "error".red().bold(), err.to_string().bold());
+    if io::stderr().is_terminal() {
+        eprintln!("{space}{}", marker.red().bold());
+        eprintln!("{}: {}", "error".red().bold(), msg.bold());
+    } else {
+        eprintln!("{space}{marker}");
+        eprintln!("error: {msg}");
+    }
 
     io::stderr().flush()
 }
@@ -283,7 +287,7 @@ fn env_bool(name: &str) -> bool {
 fn page_functions() -> io::Result<()> {
     let mut out = Vec::<u8>::new();
 
-    doc::write_functions(&mut out)?;
+    doc::write_functions(&mut out, true)?;
 
     let content = String::from_utf8(out).expect("functions page should be valid UTF-8");
     page_content("TC Functions".to_string(), content)
