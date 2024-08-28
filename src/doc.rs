@@ -9,7 +9,7 @@ If [EVALS] is not provided, program will enter interactive mode
 regardless of the --interactive switch.
 ";
 
-pub fn write_functions<W: Write>(out: &mut W) -> io::Result<()> {
+pub fn write_functions<W: Write>(out: &mut W, style: bool) -> io::Result<()> {
     use crossterm::style::Stylize;
     use tc::func;
 
@@ -21,19 +21,20 @@ pub fn write_functions<W: Write>(out: &mut W) -> io::Result<()> {
     for func in func::all_funcs() {
         if cat != Some(func.category) {
             let cat = func.category.to_string();
-            writeln!(out, "{}:", cat.bold().blue())?;
+            if style {
+                writeln!(out, "{}:", cat.bold().blue())?;
+            } else {
+                writeln!(out, "{cat}:")?;
+            }
         }
         cat = Some(func.category);
 
-        let name_len = func.name.len();
-
-        writeln!(
-            out,
-            "    {}{}: {}",
-            func.name.bold(),
-            " ".repeat(max_len - name_len),
-            func.help
-        )?;
+        let space = " ".repeat(max_len - func.name.len());
+        if style {
+            writeln!(out, "    {}{space}: {}", func.name.bold(), func.help)?;
+        } else {
+            writeln!(out, "    {}{space}: {}", func.name, func.help)?;
+        }
     }
 
     Ok(())
