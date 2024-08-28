@@ -17,9 +17,11 @@ pub fn write_functions<W: Write>(out: &mut W, style: bool) -> io::Result<()> {
 
     let funcs = func::all_funcs();
     let max_len = funcs.iter().map(|f| f.name.len()).max().unwrap_or(0);
-
     for func in func::all_funcs() {
         if cat != Some(func.category) {
+            if cat.is_some() {
+                writeln!(out)?;
+            }
             let cat = func.category.to_string();
             if style {
                 writeln!(out, "{}:", cat.bold().blue())?;
