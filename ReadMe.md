@@ -13,7 +13,7 @@ your desktop calculator or starting and using a calculator app.
 
 ## Manual
 
-The [manual](./doc/Manual.md) states quite everything you need to know about `tc`.
+The [manual](./doc/gen/tc.1.txt) states quite everything you need to know about `tc`.
 (and it'll take you about one minute to read)
 
 ## Examples

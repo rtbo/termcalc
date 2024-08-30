@@ -1,46 +1,46 @@
-[4mTC[24m(1)                                 TC                                 [4mTC[24m(1)
+TC(1)                                 TC                                 TC(1)
 
-[1mNAME[0m
+NAME
        tc - a simple Terminal Calculator
 
-[1mSYNOPSYS[0m
-       tc [[4mOPTION[24m]... [[4mEXPR[24m]...
+SYNOPSYS
+       tc [OPTION]... [EXPR]...
 
-[1mOPTIONS[0m
-       [1m-i[22m, [1m--interactive[0m
+OPTIONS
+       -i, --interactive
            Force to enter interactive mode
 
-       [1m-s[22m, [1m--strip[0m
+       -s, --strip
            Strip output of evaluations to minimum
 
-       [1m-f[22m, [1m--functions[0m
+       -f, --functions
            Print the list of supported functions
 
-       [1m-g[22m, [1m--grammar[0m
+       -g, --grammar
            Print the EBNF grammar reference
 
-       [1m-h[22m, [1m--help[0m
-           Print help (see a summary with [1m-h[22m)
+       -h, --help
+           Print help (see a summary with -h)
 
-       [1m-V[22m, [1m--version[0m
+       -V, --version
            Print version
 
-[1mDESCRIPTION[0m
-       [1mtc [22mis a simple Terminal Calculator. It can be provided expressions to
+DESCRIPTION
+       tc is a simple Terminal Calculator. It can be provided expressions to
        evaluate on the command line, or it can enter in interactive shell
        mode.
 
        If expressions are provided on the command line, they will be evaluated
-       in order, and program will exit unless [1m--interactive [22mis specified.
+       in order, and program will exit unless --interactive is specified.
 
        If no expression argument is provided, program will enter interactive
-       mode regardless of the [1m--interactive [22mswitch.
+       mode regardless of the --interactive switch.
 
-       The [1m--strip [22moption is only used for evaluation of expressions on the
-       command line. If provided, [1mtc [22mwill print the bare result of evaluation
-       and exit. This is useful to parse [1mtc[22m's output from scripts.
+       The --strip option is only used for evaluation of expressions on the
+       command line. If provided, tc will print the bare result of evaluation
+       and exit. This is useful to parse tc's output from scripts.
 
-   [1mInteractive shell usage[0m
+   Interactive shell usage
        When prompted, user can type expressions (with or without assignment).
        The expression is evaluated when ENTER is pressed.
 
@@ -60,7 +60,7 @@
 
        Pressing Ctrl-C or ESC key will exit the shell.
 
-   [1mGrammar[0m
+   Grammar
        Whitespaces are ignored and comments can be entered, starting from #
        and spanning until the end of the line.
 
@@ -69,7 +69,7 @@
        floating point.
 
        Expression grammar is what you would generally expect for ASCII
-       arithmetic expressions (see the [1mExpression examples [22mhereunder for a
+       arithmetic expressions (see the Expression examples hereunder for a
        quick tuto).
 
        Assignment grammar is variable = expression. Once a variable is
@@ -93,7 +93,7 @@
        and degs convert to degrees to radians and radians to degrees
        respectively.
 
-   [1mExpression examples[0m
+   Expression examples
        •   4 + 3.5
 
        •   0.124 * (ans + 12) / 3
@@ -110,12 +110,12 @@
 
        •   pow(e, pi/3) (again same result)
 
-[1mCOPYING[0m
+COPYING
        Copyright © 2024 Rémi Thebault.
        Free use of this software is granted under terms of UNLICENSE OR MIT
        LICENSE.
 
-[1mAUTHOR[0m
+AUTHOR
        Rémi Thebault
 
-TC                                2024-08-30                             [4mTC[24m(1)
+TC                                2024-08-30                             TC(1)
