@@ -8,8 +8,10 @@ echo "Generating man page in $DOC_DIR/gen/tc.1.ansi"
 OLD=$(stty -g)
 stty cols 80
 
-pandoc -s -t man "$DOC_DIR/Manual.md" -o "$DOC_DIR/gen/tc.1"
+asciidoctor -b manpage "$DOC_DIR/Manual.adoc" -o "$DOC_DIR/gen/tc.1"
 
+unset MAN_KEEP_FORMATTING
+man "$DOC_DIR/gen/tc.1" > "$DOC_DIR/gen/tc.1.txt"
 export MAN_KEEP_FORMATTING=1
 man "$DOC_DIR/gen/tc.1" > "$DOC_DIR/gen/tc.1.ansi"
 
