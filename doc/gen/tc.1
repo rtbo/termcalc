@@ -1,0 +1,300 @@
+'\" t
+.\"     Title: tc
+.\"    Author: Rémi Thebault
+.\" Generator: Asciidoctor 2.0.20
+.\"      Date: 2024-08-30
+.\"    Manual: TC
+.\"    Source: TC
+.\"  Language: English
+.\"
+.TH "TC" "1" "2024-08-30" "TC" "TC"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+tc \- a simple Terminal Calculator
+.SH "SYNOPSYS"
+.sp
+tc [\fIOPTION\fP]... [\fIEXPR\fP]...
+.SH "OPTIONS"
+.sp
+\fB\-i\fP, \fB\-\-interactive\fP
+.RS 4
+Force to enter interactive mode
+.RE
+.sp
+\fB\-s\fP, \fB\-\-strip\fP
+.RS 4
+Strip output of evaluations to minimum
+.RE
+.sp
+\fB\-f\fP, \fB\-\-functions\fP
+.RS 4
+Print the list of supported functions
+.RE
+.sp
+\fB\-g\fP, \fB\-\-grammar\fP
+.RS 4
+Print the EBNF grammar reference
+.RE
+.sp
+\fB\-h\fP, \fB\-\-help\fP
+.RS 4
+Print help (see a summary with \fB\-h\fP)
+.RE
+.sp
+\fB\-V\fP, \fB\-\-version\fP
+.RS 4
+Print version
+.RE
+.SH "DESCRIPTION"
+.sp
+\fBtc\fP is a simple Terminal Calculator. It can be provided expressions to
+evaluate on the command line, or it can enter in interactive shell mode.
+.sp
+If expressions are provided on the command line, they will be evaluated
+in order, and program will exit unless \fB\-\-interactive\fP
+is specified.
+.sp
+If no expression argument is provided, program will enter interactive
+mode regardless of the \fB\-\-interactive\fP switch.
+.sp
+The \fB\-\-strip\fP option is only used for evaluation of expressions on the
+command line. If provided, \fBtc\fP will print the bare result of evaluation
+and exit. This is useful to parse \fBtc\fP\*(Aqs output from scripts.
+.SS "Interactive shell usage"
+.sp
+When prompted, user can type expressions (with or without assignment).
+The expression is evaluated when ENTER is pressed.
+.sp
+Up and Down keys navigate in the expression history.
+Left and Right keys move the cursor in the expression.
+.sp
+A set of special \*(Aq:\*(Aq prefixed commands are available in the interactive shell:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR:quit\fP, \f(CR:q\fP, \f(CR:exit\fP: exit the program
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR:functions\fP: page the list of supported functions
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR:manual\fP, \f(CR:man\fP: page this manual
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR:grammar\fP: print the EBNF grammar reference
+.RE
+.sp
+Pressing \f(CRCtrl\-C\fP or \f(CRESC\fP key will exit the shell.
+.SS "Grammar"
+.sp
+Whitespaces are ignored and comments can be entered,
+starting from \f(CR#\fP and spanning until the end of the line.
+.sp
+Each evaluation consists of one line which is either an expression or an
+assignment.  All expressions are evaluated in double precision floating point.
+.sp
+Expression grammar is what you would generally expect for ASCII arithmetic
+expressions (see the \fBExpression examples\fP hereunder for a quick tuto).
+.sp
+Assignment grammar is \f(CRvariable = expression\fP.
+Once a variable is assigned, it can be reused in latter expressions.
+Variables \f(CRpi\fP and \f(CRe\fP are initialized at the start.
+Expressions that are not assigned to a user variable, are assigned to
+the special \f(CRans\fP variable, which can also be reused in latter expressions
+like any other variable.
+.sp
+The following operators are supported, listed in precedence order:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR^\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR+\fP, \f(CR\-\fP (unary)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR*\fP, \f(CR/\fP, \f(CR%\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR+\fP, \f(CR\-\fP
+.RE
+.sp
+A set of mathematical functions are provided, such as \f(CRsin\fP, \f(CRsqrt\fP, or \f(CRln\fP.
+Trigonometric functions accept angles in radians only.
+Functions \f(CRrads\fP and \f(CRdegs\fP convert to degrees to radians and radians to degrees
+respectively.
+.SS "Expression examples"
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR4 + 3.5\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR0.124 * (ans + 12) / 3\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CR4 * sin(2*pi/3)\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CRangle = asin(\-0.15)\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CRtan(angle)\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CRe^(pi/3)\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CRexp(pi/3)\fP (same result as previous expression)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\f(CRpow(e, pi/3)\fP (again same result)
+.RE
+.SH "COPYING"
+.sp
+Copyright \(co 2024 Rémi Thebault.
+.br
+Free use of this software is granted under terms of UNLICENSE OR MIT LICENSE.
+.SH "AUTHOR"
+.sp
+Rémi Thebault

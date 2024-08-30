@@ -15,6 +15,4 @@ man "$DOC_DIR/gen/tc.1" > "$DOC_DIR/gen/tc.1.txt"
 export MAN_KEEP_FORMATTING=1
 man "$DOC_DIR/gen/tc.1" > "$DOC_DIR/gen/tc.1.ansi"
 
-gzip -f "$DOC_DIR/gen/tc.1"
-
 stty "$OLD"
