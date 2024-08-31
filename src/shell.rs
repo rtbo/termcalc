@@ -14,8 +14,10 @@ use crate::doc;
 pub struct Shell {
     tc: tc::TermCalc,
     prompt: u32,
-    hist: Vec<String>,
+    expr_hist: Vec<String>,   // this one has also failed evalulations
+    eval_hist: Vec<tc::Eval>, // only succesful evaluations
     size: (u16, u16),
+    last_sym: Option<String>,
 }
 
 impl Shell {
@@ -23,7 +25,8 @@ impl Shell {
         Self {
             tc,
             prompt: 1,
-            hist: Vec::new(),
+            expr_hist: Vec::new(),
+            eval_hist: Vec::new(),
             size: (0, 0),
         }
     }
@@ -36,7 +39,7 @@ impl Shell {
             // on windows, position returns the correct line,
             // but column is 0 despite just printing the prompt
             // so we use prompt_len instead.
-            let mut input = LineInput::new((prompt_len as u16, pos.1), self.hist.clone());
+            let mut input = LineInput::new((prompt_len as u16, pos.1), self.expr_hist.clone());
 
             terminal::enable_raw_mode()?;
 
@@ -54,10 +57,11 @@ impl Shell {
                     Cmd::Exit => return Ok(()),
                     Cmd::Empty => break,
                     Cmd::Eval(expr) => {
-                        self.hist.push(expr.clone());
+                        self.expr_hist.push(expr.clone());
                         match self.tc.eval_line(expr.as_str()) {
                             Ok(tc::Eval { sym, val }) => {
                                 println!("{} = {}", sym, val);
+                                self.eval_hist.push(tc::Eval { sym, val });
                                 self.prompt += 1;
                                 break;
                             }
@@ -67,7 +71,7 @@ impl Shell {
                             }
                         }
                     }
-                    Cmd::Cmd(cmd) => match cmd.as_str() {
+                    Cmd::Cmd(cmd) => match cmd.trim() {
                         "exit" | "quit" | "q" => return Ok(()),
                         "functions" => {
                             page_functions()?;
@@ -81,9 +85,27 @@ impl Shell {
                             println!("{}", doc::GRAMMAR);
                             break;
                         }
-                        _ => {
-                            eprintln!("{}: Unknown command: {}", "error".red().bold(), cmd.bold());
+                        "copy" | "cp" => {
+                            match self.eval_hist.last() {
+                                None => eprintln!("Nothing to copy"),
+                                Some(eval) => {
+                                    Self::copy_to_clipboard(eval.val.to_string().as_str());
+                                }
+                            }
                             break;
+                        }
+                        cmd => {
+                            if cmd.starts_with("copy ") || cmd.starts_with("cp ") {
+                                self.handle_copy_arg(cmd);
+                                break;
+                            } else {
+                                eprintln!(
+                                    "{}: Unknown command: {}",
+                                    "error".red().bold(),
+                                    cmd.bold()
+                                );
+                                break;
+                            }
                         }
                     },
                 }
@@ -158,6 +180,98 @@ impl Shell {
             _ => {}
         }
         Ok(Cmd::Loop)
+    }
+
+    fn handle_copy_arg(&mut self, cmd: &str) {
+        let arg = if cmd.starts_with("copy ") {
+            &cmd[5..]
+        } else if cmd.starts_with("cp ") {
+            &cmd[3..]
+        } else {
+            unreachable!("expected copy command");
+        };
+        let arg = arg.trim();
+        assert!(!arg.is_empty());
+        if arg.chars().next().unwrap().is_ascii_digit() {
+            let idx = match arg.parse::<usize>() {
+                Ok(idx) => {
+                    if idx == 0 {
+                        eprintln!(
+                            "{}: {} isn't a valid history entry",
+                            "error".red().bold(),
+                            "0".bold()
+                        );
+                        return;
+                    }
+                    idx - 1
+                }
+                Err(err) => {
+                    eprintln!(
+                        "{}: {arg} is not a valid number ({})",
+                        "error".red().bold(),
+                        err
+                    );
+                    return;
+                }
+            };
+            self.copy_hist_to_clipboard(idx);
+        } else {
+            self.copy_sym_to_clipboard(arg);
+        }
+    }
+
+    fn copy_sym_to_clipboard(&self, sym: &str) {
+        let val = match self.tc.get_var(sym) {
+            None => {
+                eprintln!("{}: Unknown variable: {}", "error".red().bold(), sym.bold());
+                return;
+            }
+            Some(val) => val,
+        };
+        Self::copy_to_clipboard(&format!("{val}"));
+    }
+
+    fn copy_hist_to_clipboard(&self, idx: usize) {
+        match self.eval_hist.get(idx) {
+            None => {
+                eprintln!(
+                    "{}: No such history entry: {}",
+                    "error".red().bold(),
+                    idx + 1
+                );
+            }
+            Some(eval) => {
+                Self::copy_to_clipboard(eval.val.to_string().as_str());
+            }
+        }
+    }
+
+    fn copy_to_clipboard(text: &str) {
+        use arboard::Clipboard;
+
+        let mut ctx = match Clipboard::new() {
+            Ok(ctx) => ctx,
+            Err(err) => {
+                eprintln!(
+                    "{}: {} ({err})",
+                    "error".red().bold(),
+                    "Clipboard not available".bold()
+                );
+                return;
+            }
+        };
+        match ctx.set_text(text) {
+            Ok(()) => {
+                println!("Copied {}!", text.bold());
+            }
+            Err(err) => {
+                eprintln!(
+                    "{}: {} ({err})",
+                    "error".red().bold(),
+                    "Could not write to clipboard".bold()
+                );
+            }
+        }
     }
 }
 
