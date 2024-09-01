@@ -240,9 +240,9 @@ impl Shell {
         match self.eval_hist.get(idx) {
             None => {
                 eprintln!(
-                    "{}: No such history entry: {}",
+                    "{}: {} isn't a valid history entry",
                     "error".red().bold(),
-                    idx + 1
+                    (idx + 1).to_string().bold()
                 );
             }
             Some(eval) => {
@@ -267,7 +267,7 @@ impl Shell {
         };
         match ctx.set_text(text) {
             Ok(()) => {
-                println!("Copied {}!", text.bold());
+                println!("Copied {}", text.bold());
             }
             Err(err) => {
                 eprintln!(
