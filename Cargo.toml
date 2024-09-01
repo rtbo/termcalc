@@ -9,7 +9,7 @@ repository = "https://github.com/rtbo/termcalc"
 documentation = "https://github.com/rtbo/termcalc"
 readme = "ReadMe.md"
 keywords = ["calculator", "terminal", "cli"]
-categories = ["command-line-utilities", "math", "calculator"]
+categories = ["command-line-utilities", "mathematics"]
 edition = "2021"
 
 [lib]
