@@ -2,12 +2,12 @@
 .\"     Title: tc
 .\"    Author: Rémi Thebault
 .\" Generator: Asciidoctor 2.0.20
-.\"      Date: 2024-08-30
+.\"      Date: 2024-09-01
 .\"    Manual: TC
 .\"    Source: TC
 .\"  Language: English
 .\"
-.TH "TC" "1" "2024-08-30" "TC" "TC"
+.TH "TC" "1" "2024-09-01" "TC" "TC"
 .ie \n(.g .ds Aq \(aq
 .el       .ds Aq '
 .ss \n[.ss] 0
@@ -96,7 +96,7 @@ A set of special \*(Aq:\*(Aq prefixed commands are available in the interactive 
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR:quit\fP, \f(CR:q\fP, \f(CR:exit\fP: exit the program
+\fB:quit\fP, \fB:q\fP, \fB:exit\fP: exit the program
 .RE
 .sp
 .RS 4
@@ -107,7 +107,7 @@ A set of special \*(Aq:\*(Aq prefixed commands are available in the interactive 
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR:functions\fP: page the list of supported functions
+\fB:functions\fP: page the list of supported functions
 .RE
 .sp
 .RS 4
@@ -118,7 +118,7 @@ A set of special \*(Aq:\*(Aq prefixed commands are available in the interactive 
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR:manual\fP, \f(CR:man\fP: page this manual
+\fB:manual\fP, \fB:man\fP: page this manual
 .RE
 .sp
 .RS 4
@@ -129,10 +129,43 @@ A set of special \*(Aq:\*(Aq prefixed commands are available in the interactive 
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR:grammar\fP: print the EBNF grammar reference
+\fB:grammar\fP: print the EBNF grammar reference
 .RE
 .sp
-Pressing \f(CRCtrl\-C\fP or \f(CRESC\fP key will exit the shell.
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fB:copy\fP \fI[ARG]\fP, \fB:cp\fP \fI[ARG]\fP: copy to clipboard
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fIARG\fP can be a variable name or evaluation history index
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+the last evaluated value if no \fIARG\fP
+.RE
+.RE
+.sp
+Pressing \fICtrl\-C\fP or \fIESC\fP key will exit the shell.
 .SS "Grammar"
 .sp
 Whitespaces are ignored and comments can be entered,
@@ -161,7 +194,7 @@ The following operators are supported, listed in precedence order:
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR^\fP
+\fB^\fP
 .RE
 .sp
 .RS 4
@@ -172,7 +205,7 @@ The following operators are supported, listed in precedence order:
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR+\fP, \f(CR\-\fP (unary)
+\fB+\fP, \fB\-\fP (unary)
 .RE
 .sp
 .RS 4
@@ -183,7 +216,7 @@ The following operators are supported, listed in precedence order:
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR*\fP, \f(CR/\fP, \f(CR%\fP
+\fB*\fP, \fB/\fP, \fB%\fP
 .RE
 .sp
 .RS 4
@@ -194,13 +227,15 @@ The following operators are supported, listed in precedence order:
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR+\fP, \f(CR\-\fP
+\fB+\fP, \fB\-\fP
 .RE
 .sp
-A set of mathematical functions are provided, such as \f(CRsin\fP, \f(CRsqrt\fP, or \f(CRln\fP.
+A set of mathematical functions are provided, such as \fIsin\fP, \fIsqrt\fP, or \fIln\fP.
 Trigonometric functions accept angles in radians only.
-Functions \f(CRrads\fP and \f(CRdegs\fP convert to degrees to radians and radians to degrees
+Functions \fIrads\fP and \fIdegs\fP convert to degrees to radians and radians to degrees
 respectively.
+The \fB:functions\fP command or \fB\-\-functions\fP option print the full list of supported
+functions.
 .SS "Expression examples"
 .sp
 .RS 4
@@ -211,7 +246,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR4 + 3.5\fP
+\fB4 + 3.5\fP
 .RE
 .sp
 .RS 4
@@ -222,7 +257,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR0.124 * (ans + 12) / 3\fP
+\fB0.124 * (ans + 12) / 3\fP
 .RE
 .sp
 .RS 4
@@ -233,7 +268,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CR4 * sin(2*pi/3)\fP
+\fB4 * sin(2*pi/3)\fP
 .RE
 .sp
 .RS 4
@@ -244,7 +279,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CRangle = asin(\-0.15)\fP
+\fB12 * sin(rads(33))\fP
 .RE
 .sp
 .RS 4
@@ -255,7 +290,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CRtan(angle)\fP
+\fBangle = asin(\-0.15)\fP
 .RE
 .sp
 .RS 4
@@ -266,7 +301,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CRe^(pi/3)\fP
+\fBtan(angle)\fP
 .RE
 .sp
 .RS 4
@@ -277,7 +312,7 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CRexp(pi/3)\fP (same result as previous expression)
+\fBe^(pi/3)\fP
 .RE
 .sp
 .RS 4
@@ -288,7 +323,18 @@ respectively.
 .  sp -1
 .  IP \(bu 2.3
 .\}
-\f(CRpow(e, pi/3)\fP (again same result)
+\fBexp(pi/3)\fP (same result as previous expression)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fBpow(e, pi/3)\fP (again same result)
 .RE
 .SH "COPYING"
 .sp

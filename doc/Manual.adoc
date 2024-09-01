@@ -1,6 +1,6 @@
 = tc(1)
 Rémi Thebault
-v0.1.0, 2024-08-30
+v0.1.0, 2024-09-01
 :doctype: manpage
 :manmanual: TC
 :mansource: TC
@@ -59,12 +59,15 @@ Left and Right keys move the cursor in the expression.
 
 A set of special ':' prefixed commands are available in the interactive shell:
 
-* `+:quit+`, `+:q+`, `+:exit+`: exit the program
-* `+:functions+`: page the list of supported functions
-* `+:manual+`, `+:man+`: page this manual
-* `+:grammar+`: print the EBNF grammar reference
+* *:quit*, *:q*, *:exit*: exit the program
+* *:functions*: page the list of supported functions
+* *:manual*, *:man*: page this manual
+* *:grammar*: print the EBNF grammar reference
+* *:copy* _[ARG]_, *:cp* _[ARG]_: copy to clipboard
+    ** _ARG_ can be a variable name or evaluation history index
+    ** the last evaluated value if no _ARG_
 
-Pressing `+Ctrl-C+` or `+ESC+` key will exit the shell.
+Pressing _Ctrl-C_ or _ESC_ key will exit the shell.
 
 === Grammar
 
@@ -86,26 +89,29 @@ like any other variable.
 
 The following operators are supported, listed in precedence order:
 
-* `+^+`
-* `+++`, `+-+` (unary)
-* `+*+`, `+/+`, `+%+`
-* `+++`, `+-+`
+* *^*
+* *+*, *-* (unary)
+* ***, */*, *%*
+* *+*, *-*
 
-A set of mathematical functions are provided, such as `sin`, `sqrt`, or `ln`.
+A set of mathematical functions are provided, such as _sin_, _sqrt_, or _ln_.
 Trigonometric functions accept angles in radians only.
-Functions `rads` and `degs` convert to degrees to radians and radians to degrees
+Functions _rads_ and _degs_ convert to degrees to radians and radians to degrees
 respectively.
+The *:functions* command or *--functions* option print the full list of supported
+functions.
 
 === Expression examples
 
-* `+4 + 3.5+`
-* `+0.124 * (ans + 12) / 3+`
-* `+4 * sin(2*pi/3)+`
-* `+angle = asin(-0.15)+`
-* `+tan(angle)+`
-* `+e^(pi/3)+`
-* `+exp(pi/3)+` (same result as previous expression)
-* `+pow(e, pi/3)+` (again same result)
+* *4 + 3.5*
+* *0.124 * (ans + 12) / 3*
+* *4 * sin(2*pi/3)*
+* *12 * sin(rads(33))*
+* *angle = asin(-0.15)*
+* *tan(angle)*
+* *e^(pi/3)*
+* *exp(pi/3)* (same result as previous expression)
+* *pow(e, pi/3)* (again same result)
 
 == COPYING
 
