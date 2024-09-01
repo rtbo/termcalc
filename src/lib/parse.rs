@@ -263,8 +263,8 @@ where
                 })
             }
             Some(Token {
-                kind: TokenKind::Symbol(sym),
-                span: symspan,
+                kind: TokenKind::Symbol(name),
+                span: name_span,
             }) => {
                 let next = self.first_token()?;
                 match next {
@@ -275,15 +275,19 @@ where
                         self.bump_token();
                         let args = self.parse_arg_list()?;
                         let closespan = self.expect_kind(TokenKind::ClosePar)?;
-                        let span = (symspan.0, closespan.1);
+                        let span = (name_span.0, closespan.1);
                         Ok(ast::Expr {
-                            kind: ast::ExprKind::Call(sym, args),
+                            kind: ast::ExprKind::Call {
+                                name_span,
+                                name,
+                                args,
+                            },
                             span,
                         })
                     }
                     _ => Ok(ast::Expr {
-                        kind: ast::ExprKind::Var(sym),
-                        span: symspan,
+                        kind: ast::ExprKind::Var(name),
+                        span: name_span,
                     }),
                 }
             }
@@ -615,13 +619,14 @@ fn test_sin_pi() {
             span: (0, 7),
             kind: ast::ItemKind::Expr(ast::Expr {
                 span: (0, 7),
-                kind: ast::ExprKind::Call(
-                    "sin".to_string(),
-                    vec![ast::Expr {
+                kind: ast::ExprKind::Call {
+                    name_span: (0, 3),
+                    name: "sin".to_string(),
+                    args: vec![ast::Expr {
                         span: (4, 6),
                         kind: ast::ExprKind::Var("pi".to_string(),)
                     }]
-                )
+                }
             })
         }
     )

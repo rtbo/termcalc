@@ -159,14 +159,24 @@ impl TermCalc {
                     ast::UnOp::Minus => Ok(-val),
                 }
             }
-            ast::ExprKind::Call(func, args) => self.eval_call(span, func, args),
+            ast::ExprKind::Call {
+                name_span,
+                name,
+                args,
+            } => self.eval_call(span, name_span, name, args),
         }
     }
 
-    fn eval_call(&self, span: Span, func: String, args: Vec<ast::Expr>) -> Result<f64, Error> {
-        let func = match self.funcs.get(&func) {
+    fn eval_call(
+        &self,
+        span: Span,
+        name_span: Span,
+        name: String,
+        args: Vec<ast::Expr>,
+    ) -> Result<f64, Error> {
+        let func = match self.funcs.get(&name) {
             Some(f) => f,
-            None => return Err(Error::UnknownFunc(span, func)),
+            None => return Err(Error::UnknownFunc(name_span, name)),
         };
         let args = self.eval_args(span, func, args)?;
         let f = func.eval;

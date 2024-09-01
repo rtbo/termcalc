@@ -40,5 +40,9 @@ pub enum ExprKind {
     Var(String),
     UnOp(UnOp, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
-    Call(String, Vec<Expr>),
+    Call{
+        name_span: Span,
+        name: String,
+        args: Vec<Expr>,
+    },
 }

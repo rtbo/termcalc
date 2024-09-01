@@ -41,7 +41,7 @@ $ tc -s "12*3 + 18*2.5 - 3 * 2.3" # or --strip
 ```sh
 $ tc "1.4 + son(pi/6)" # typo
 1.4 + son(pi/6)
-      ^^^^^^^^^
+      ^^^
 error: Function `son` is unknown
 ```
 
