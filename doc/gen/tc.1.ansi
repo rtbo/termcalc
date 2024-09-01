@@ -50,15 +50,21 @@
        A set of special ':' prefixed commands are available in the interactive
        shell:
 
-       •   :quit, :q, :exit: exit the program
+       •   [1m:quit[22m, [1m:q[22m, [1m:exit[22m: exit the program
 
-       •   :functions: page the list of supported functions
+       •   [1m:functions[22m: page the list of supported functions
 
-       •   :manual, :man: page this manual
+       •   [1m:manual[22m, [1m:man[22m: page this manual
 
-       •   :grammar: print the EBNF grammar reference
+       •   [1m:grammar[22m: print the EBNF grammar reference
 
-       Pressing Ctrl-C or ESC key will exit the shell.
+       •   [1m:copy [4m[22m[ARG][24m, [1m:cp [4m[22m[ARG][24m: copy to clipboard
+
+           •   [4mARG[24m can be a variable name or evaluation history index
+
+           •   the last evaluated value if no [4mARG[0m
+
+       Pressing [4mCtrl-C[24m or [4mESC[24m key will exit the shell.
 
    [1mGrammar[0m
        Whitespaces are ignored and comments can be entered, starting from #
@@ -80,35 +86,38 @@
 
        The following operators are supported, listed in precedence order:
 
-       •   ^
+       •   [1m^[0m
 
-       •   +, - (unary)
+       •   [1m+[22m, [1m- [22m(unary)
 
-       •   *, /, %
+       •   [1m*[22m, [1m/[22m, [1m%[0m
 
-       •   +, -
+       •   [1m+[22m, [1m-[0m
 
-       A set of mathematical functions are provided, such as sin, sqrt, or ln.
-       Trigonometric functions accept angles in radians only. Functions rads
-       and degs convert to degrees to radians and radians to degrees
-       respectively.
+       A set of mathematical functions are provided, such as [4msin[24m, [4msqrt[24m, or [4mln[24m.
+       Trigonometric functions accept angles in radians only. Functions [4mrads[0m
+       and [4mdegs[24m convert to degrees to radians and radians to degrees
+       respectively. The [1m:functions [22mcommand or [1m--functions [22moption print the
+       full list of supported functions.
 
    [1mExpression examples[0m
-       •   4 + 3.5
+       •   [1m4 + 3.5[0m
 
-       •   0.124 * (ans + 12) / 3
+       •   [1m0.124 * (ans + 12) / 3[0m
 
-       •   4 * sin(2*pi/3)
+       •   [1m4 * sin(2*pi/3)[0m
 
-       •   angle = asin(-0.15)
+       •   [1m12 * sin(rads(33))[0m
 
-       •   tan(angle)
+       •   [1mangle = asin(-0.15)[0m
 
-       •   e^(pi/3)
+       •   [1mtan(angle)[0m
 
-       •   exp(pi/3) (same result as previous expression)
+       •   [1me^(pi/3)[0m
 
-       •   pow(e, pi/3) (again same result)
+       •   [1mexp(pi/3) [22m(same result as previous expression)
+
+       •   [1mpow(e, pi/3) [22m(again same result)
 
 [1mCOPYING[0m
        Copyright © 2024 Rémi Thebault.
@@ -118,4 +127,4 @@
 [1mAUTHOR[0m
        Rémi Thebault
 
-TC                                2024-08-30                             [4mTC[24m(1)
+TC                                2024-09-01                             [4mTC[24m(1)

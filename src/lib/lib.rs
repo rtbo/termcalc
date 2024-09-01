@@ -98,6 +98,10 @@ impl TermCalc {
         TermCalc { vars, funcs }
     }
 
+    pub fn get_var(&self, name: &str) -> Option<f64> {
+        self.vars.get(name).copied()
+    }
+
     pub fn eval_line<S: AsRef<str>>(&mut self, line: S) -> Result<Eval, Error> {
         let line = line.as_ref();
         let item = parse::parse_line(line.chars())?;

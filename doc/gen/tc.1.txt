@@ -58,6 +58,12 @@ DESCRIPTION
 
        •   :grammar: print the EBNF grammar reference
 
+       •   :copy [ARG], :cp [ARG]: copy to clipboard
+
+           •   ARG can be a variable name or evaluation history index
+
+           •   the last evaluated value if no ARG
+
        Pressing Ctrl-C or ESC key will exit the shell.
 
    Grammar
@@ -91,7 +97,8 @@ DESCRIPTION
        A set of mathematical functions are provided, such as sin, sqrt, or ln.
        Trigonometric functions accept angles in radians only. Functions rads
        and degs convert to degrees to radians and radians to degrees
-       respectively.
+       respectively. The :functions command or --functions option print the
+       full list of supported functions.
 
    Expression examples
        •   4 + 3.5
@@ -99,6 +106,8 @@ DESCRIPTION
        •   0.124 * (ans + 12) / 3
 
        •   4 * sin(2*pi/3)
+
+       •   12 * sin(rads(33))
 
        •   angle = asin(-0.15)
 
@@ -118,4 +127,4 @@ COPYING
 AUTHOR
        Rémi Thebault
 
-TC                                2024-08-30                             TC(1)
+TC                                2024-09-01                             TC(1)
