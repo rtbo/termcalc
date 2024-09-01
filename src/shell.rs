@@ -17,7 +17,12 @@ pub struct Shell {
     expr_hist: Vec<String>,   // this one has also failed evalulations
     eval_hist: Vec<tc::Eval>, // only succesful evaluations
     size: (u16, u16),
-    last_sym: Option<String>,
+}
+
+impl Drop for Shell {
+    fn drop(&mut self) {
+        let _ = terminal::disable_raw_mode();
+    }
 }
 
 impl Shell {
