@@ -2,7 +2,7 @@
 name = "termcalc"
 version = "1.0.0"
 authors = ["Rémi THEBAULT <remi.thebault@gmail.com>"]
-license = "Unlicense or MIT"
+license = "MIT"
 description = "a simple Terminal Calculator."
 homepage = "https://github.com/rtbo/termcalc"
 repository = "https://github.com/rtbo/termcalc"
