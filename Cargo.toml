@@ -36,6 +36,5 @@ assets = [
   ["target/release/tc", "usr/bin/", "755"],
   ["UNLICENSE", "usr/share/doc/tc/", "644"],
   ["LICENSE-MIT", "usr/share/doc/tc/", "644"],
-  ["ReadMe.md", "usr/share/doc/tc/README", "644"],
-  ["doc/gen/tc.1.gz", "usr/share/man/man1/tc.1.gz", "644"],
+  ["doc/gen/tc.1", "usr/share/man/man1/tc.1", "644"],
 ]
