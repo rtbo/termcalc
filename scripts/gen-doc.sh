@@ -10,8 +10,6 @@ stty cols 80
 
 asciidoctor -b manpage "$DOC_DIR/Manual.adoc" -o "$DOC_DIR/gen/tc.1"
 
-unset MAN_KEEP_FORMATTING
-man "$DOC_DIR/gen/tc.1" > "$DOC_DIR/gen/tc.1.txt"
 export MAN_KEEP_FORMATTING=1
 man "$DOC_DIR/gen/tc.1" > "$DOC_DIR/gen/tc.1.ansi"
 
