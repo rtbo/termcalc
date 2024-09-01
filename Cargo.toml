@@ -1,6 +1,6 @@
 [package]
 name = "termcalc"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Rémi THEBAULT <remi.thebault@gmail.com>"]
 license = "Unlicense or MIT"
 description = "tc is a simple Terminal Calculator"

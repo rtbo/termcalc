@@ -1,6 +1,6 @@
 = tc(1)
 Rémi Thebault
-v0.1.0, 2024-09-01
+v1.0, 2024-09-01
 :doctype: manpage
 :manmanual: TC
 :mansource: TC
