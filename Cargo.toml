@@ -11,6 +11,7 @@ readme = "ReadMe.md"
 keywords = ["calculator", "terminal", "cli"]
 categories = ["command-line-utilities", "mathematics"]
 edition = "2021"
+rust-version = "1.74.0"
 
 [lib]
 name = "tc"
