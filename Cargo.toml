@@ -3,7 +3,7 @@ name = "termcalc"
 version = "1.0.0"
 authors = ["Rémi THEBAULT <remi.thebault@gmail.com>"]
 license = "MIT"
-description = "a simple Terminal Calculator."
+description = "a simple Terminal Calculator"
 homepage = "https://github.com/rtbo/termcalc"
 repository = "https://github.com/rtbo/termcalc"
 documentation = "https://github.com/rtbo/termcalc"
@@ -34,8 +34,8 @@ approx = "0.5.1"
 [package.metadata.deb]
 section = "math"
 assets = [
-  ["target/release/tc", "usr/bin/", "755"],
-  ["UNLICENSE", "usr/share/doc/tc/", "644"],
-  ["LICENSE-MIT", "usr/share/doc/tc/", "644"],
-  ["doc/gen/tc.1", "usr/share/man/man1/tc.1", "644"],
+  ["target/release/tc", "usr/bin/termcalc", "755"],
+  ["UNLICENSE", "usr/share/doc/termcalc/", "644"],
+  ["LICENSE-MIT", "usr/share/doc/termcalc/", "644"],
+  ["doc/gen/tc.1", "usr/share/man/man1/termcalc.1", "644"],
 ]
