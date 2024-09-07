@@ -60,12 +60,17 @@ $ cargo install termcalc
 
 This will install the program `tc` on all supported platforms.
 
+| Method | Platform | How-To |
+|-----|------|-----|
+| Cargo | All | `cargo install termcalc` |
+| Snap | Linux | `sudo snap install termcalc` |
+
 _Other methods: work in progress_
 
 ### Linux specific case
 
 On Linux, `tc` is a kernel system utility (Traffic Control).
-So other methods than `cargo` will install a binary named `termcalc`.
+Snap and distribution packages will install a binary named `termcalc`.
 If you don't use the system `tc`, you are encouraged to create
 a `tc` alias to `termcalc` like so:
 
