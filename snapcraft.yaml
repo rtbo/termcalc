@@ -1,0 +1,21 @@
+name: termcalc
+version: 1.0.0
+summary: a simple Terminal Calculator
+description: |
+  termcalc (`tc`) is a simple Terminal Calculator.
+  It supports basic arithmetic operations and math functions
+  that can be entered in the terminal.
+  e.g. `tc "4 + 3.5"`.
+  Without any arguments, it will start in interactive mode.
+
+base: core20
+confinement: strict
+
+parts:
+  termcalc:
+    plugin: rust
+    source: .
+
+apps:
+  termcalc:
+    command: bin/tc
