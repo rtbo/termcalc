@@ -37,5 +37,5 @@ assets = [
   ["target/release/tc", "usr/bin/termcalc", "755"],
   ["UNLICENSE", "usr/share/doc/termcalc/", "644"],
   ["LICENSE-MIT", "usr/share/doc/termcalc/", "644"],
-  ["doc/gen/tc.1", "usr/share/man/man1/termcalc.1", "644"],
+  ["target/man/termcalc.1", "usr/share/man/man1/termcalc.1", "644"],
 ]
