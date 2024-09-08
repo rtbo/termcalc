@@ -1,6 +1,5 @@
 use std::io::{self, Write};
 
-pub const MANUAL: &str = include_str!("../doc/gen/tc.1.ansi");
 pub const GRAMMAR: &str = include_str!("../doc/Grammar.ebnf");
 pub const AFTER_HELP: &str = "If [EVALS] if provided, passed arguments will be evaluated,
 and program will exit unless --interactive is specified.

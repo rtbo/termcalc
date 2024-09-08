@@ -61,7 +61,6 @@ A set of special ':' prefixed commands are available in the interactive shell:
 
 * *:quit*, *:q*, *:exit*: exit the program
 * *:functions*: page the list of supported functions
-* *:manual*, *:man*: page this manual
 * *:grammar*: print the EBNF grammar reference
 * *:copy* _[ARG]_, *:cp* _[ARG]_: copy to clipboard
     ** _ARG_ can be a variable name or evaluation history index

@@ -82,10 +82,6 @@ impl Shell {
                             page_functions()?;
                             break;
                         }
-                        "manual" | "man" => {
-                            page_manual()?;
-                            break;
-                        }
                         "grammar" => {
                             println!("{}", doc::GRAMMAR);
                             break;
@@ -396,13 +392,6 @@ pub fn print_diagnostic(err: &tc::Error, indent: u32) -> io::Result<()> {
     io::stderr().flush()
 }
 
-fn env_bool(name: &str) -> bool {
-    match std::env::var(name) {
-        Ok(val) => val != "0",
-        Err(_) => false,
-    }
-}
-
 fn page_functions() -> io::Result<()> {
     let mut out = Vec::<u8>::new();
 
@@ -410,16 +399,6 @@ fn page_functions() -> io::Result<()> {
 
     let content = String::from_utf8(out).expect("functions page should be valid UTF-8");
     page_content("TC Functions".to_string(), content)
-}
-
-fn page_manual() -> io::Result<()> {
-    let content = if env_bool("NO_COLOR") {
-        strip_ansi_escapes::strip_str(doc::MANUAL)
-    } else {
-        doc::MANUAL.to_string()
-    };
-
-    page_content("TC manual".to_string(), content)
 }
 
 fn page_content(title: String, content: String) -> io::Result<()> {
