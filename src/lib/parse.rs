@@ -171,36 +171,40 @@ where
     }
 
     fn parse_add_expr(&mut self) -> Result<ast::Expr> {
-        let lhs = self.parse_mul_expr()?;
-        let tok = self.first_token()?;
-        match tok {
-            Some(Token { kind, .. }) if is_add_op(&kind) => {
-                self.bump_token();
-                let rhs = self.parse_add_expr()?;
-                let span = (lhs.span.0, rhs.span.1);
-                Ok(ast::Expr {
-                    kind: ast::ExprKind::BinOp(bin_op(&kind), Box::new(lhs), Box::new(rhs)),
-                    span,
-                })
+        let mut lhs = self.parse_mul_expr()?;
+        loop {
+            let tok = self.first_token()?;
+            match tok {
+                Some(Token { kind, .. }) if is_add_op(&kind) => {
+                    self.bump_token();
+                    let rhs = self.parse_mul_expr()?;
+                    let expr = ast::Expr {
+                        span: (lhs.span.0, rhs.span.1),
+                        kind: ast::ExprKind::BinOp(bin_op(&kind), Box::new(lhs), Box::new(rhs)),
+                    };
+                    lhs = expr;
+                }
+                _ => return Ok(lhs),
             }
-            _ => Ok(lhs),
         }
     }
 
     fn parse_mul_expr(&mut self) -> Result<ast::Expr> {
-        let lhs = self.parse_unary_expr()?;
-        let tok = self.first_token()?;
-        match tok {
-            Some(Token { kind, .. }) if is_mul_op(&kind) => {
-                self.bump_token();
-                let rhs = self.parse_mul_expr()?;
-                let span = (lhs.span.0, rhs.span.1);
-                Ok(ast::Expr {
-                    kind: ast::ExprKind::BinOp(bin_op(&kind), Box::new(lhs), Box::new(rhs)),
-                    span,
-                })
+        let mut lhs = self.parse_unary_expr()?;
+        loop {
+            let tok = self.first_token()?;
+            match tok {
+                Some(Token { kind, .. }) if is_mul_op(&kind) => {
+                    self.bump_token();
+                    let rhs = self.parse_unary_expr()?;
+                    let expr = ast::Expr {
+                        span: (lhs.span.0, rhs.span.1),
+                        kind: ast::ExprKind::BinOp(bin_op(&kind), Box::new(lhs), Box::new(rhs)),
+                    };
+                    lhs = expr;
+                }
+                _ => return Ok(lhs),
             }
-            _ => Ok(lhs),
         }
     }
 
@@ -638,7 +642,7 @@ fn fail_test_14_eq_12() {
 }
 
 #[test]
-fn test_add_add_add() {
+fn test_parse_add_add() {
     let item: ast::Item = parse_line("1 + 2 + 3".chars()).unwrap();
 
     assert_eq!(
@@ -650,31 +654,67 @@ fn test_add_add_add() {
                 kind: ast::ExprKind::BinOp(
                     ast::BinOp::Add,
                     Box::new(ast::Expr {
-                        span: (0, 1),
-                        kind: ast::ExprKind::Num(1.0),
-                    }),
-                    Box::new(ast::Expr {
-                        span: (4, 9),
+                        span: (0, 5),
                         kind: ast::ExprKind::BinOp(
                             ast::BinOp::Add,
                             Box::new(ast::Expr {
-                                span: (4, 5),
-                                kind: ast::ExprKind::Num(2.0),
+                                span: (0, 1),
+                                kind: ast::ExprKind::Num(1.0),
                             }),
                             Box::new(ast::Expr {
-                                span: (8, 9),
-                                kind: ast::ExprKind::Num(3.0),
+                                span: (4, 5),
+                                kind: ast::ExprKind::Num(2.0),
                             })
-                        ),
+                        )
+                    }),
+                    Box::new(ast::Expr {
+                        span: (8, 9),
+                        kind: ast::ExprKind::Num(3.0),
                     })
                 )
             })
         }
-    );
+    )
 }
 
 #[test]
-fn test_mul_mul_mul() {
+fn test_parse_minus_minus() {
+    let item: ast::Item = parse_line("1 - 2 - 3".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 9),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 9),
+                kind: ast::ExprKind::BinOp(
+                    ast::BinOp::Sub,
+                    Box::new(ast::Expr {
+                        span: (0, 5),
+                        kind: ast::ExprKind::BinOp(
+                            ast::BinOp::Sub,
+                            Box::new(ast::Expr {
+                                span: (0, 1),
+                                kind: ast::ExprKind::Num(1.0),
+                            }),
+                            Box::new(ast::Expr {
+                                span: (4, 5),
+                                kind: ast::ExprKind::Num(2.0),
+                            })
+                        )
+                    }),
+                    Box::new(ast::Expr {
+                        span: (8, 9),
+                        kind: ast::ExprKind::Num(3.0),
+                    })
+                )
+            })
+        }
+    )
+}
+
+#[test]
+fn test_parse_mul_mul() {
     let item: ast::Item = parse_line("1 * 2 * 3".chars()).unwrap();
 
     assert_eq!(
@@ -686,23 +726,59 @@ fn test_mul_mul_mul() {
                 kind: ast::ExprKind::BinOp(
                     ast::BinOp::Mul,
                     Box::new(ast::Expr {
-                        span: (0, 1),
-                        kind: ast::ExprKind::Num(1.0),
-                    }),
-                    Box::new(ast::Expr {
-                        span: (4, 9),
+                        span: (0, 5),
                         kind: ast::ExprKind::BinOp(
                             ast::BinOp::Mul,
                             Box::new(ast::Expr {
-                                span: (4, 5),
-                                kind: ast::ExprKind::Num(2.0),
+                                span: (0, 1),
+                                kind: ast::ExprKind::Num(1.0),
                             }),
                             Box::new(ast::Expr {
-                                span: (8, 9),
-                                kind: ast::ExprKind::Num(3.0),
+                                span: (4, 5),
+                                kind: ast::ExprKind::Num(2.0),
                             })
                         ),
-                    })
+                    }),
+                    Box::new(ast::Expr {
+                        span: (8, 9),
+                        kind: ast::ExprKind::Num(3.0),
+                    }),
+                )
+            })
+        }
+    );
+}
+
+#[test]
+fn test_parse_div_div() {
+    let item: ast::Item = parse_line("1 / 2 / 3".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 9),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 9),
+                kind: ast::ExprKind::BinOp(
+                    ast::BinOp::Div,
+                    Box::new(ast::Expr {
+                        span: (0, 5),
+                        kind: ast::ExprKind::BinOp(
+                            ast::BinOp::Div,
+                            Box::new(ast::Expr {
+                                span: (0, 1),
+                                kind: ast::ExprKind::Num(1.0),
+                            }),
+                            Box::new(ast::Expr {
+                                span: (4, 5),
+                                kind: ast::ExprKind::Num(2.0),
+                            })
+                        ),
+                    }),
+                    Box::new(ast::Expr {
+                        span: (8, 9),
+                        kind: ast::ExprKind::Num(3.0),
+                    }),
                 )
             })
         }
