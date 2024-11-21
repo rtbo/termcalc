@@ -291,5 +291,13 @@ mod tests {
             },
             epsilon = f64::EPSILON,
         );
+        assert_relative_eq!(
+            tc.eval_line("10 - 1 - 2 - 3").unwrap(),
+            Eval {
+                sym: "ans".to_string(),
+                val: 4.0,
+            },
+            epsilon = f64::EPSILON,
+        );
     }
 }
