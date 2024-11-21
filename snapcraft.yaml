@@ -1,5 +1,5 @@
 name: termcalc
-version: 1.0.0
+version: 1.0.1
 summary: a simple Terminal Calculator
 description: |
   termcalc (`tc`) is a simple Terminal Calculator.
