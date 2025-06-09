@@ -92,21 +92,8 @@ where
     }
 
     fn parse_num(&mut self, pos: Pos, first: char) -> Result<f64> {
-        let mut s = String::from(first);
-        loop {
-            let c = self.cursor.first();
-            match c {
-                Some(c) if c.is_ascii_digit() || c == '.' => {
-                    self.cursor.next();
-                    s.push(c)
-                }
-                _ => break,
-            }
-        }
-        match s.parse::<f64>() {
-            Ok(n) => Ok(n),
-            Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
-        }
+        // externalize function for testing
+        do_parse_num(&mut self.cursor, pos, first)
     }
 
     fn next_token_kind(&mut self, pos: Pos) -> Result<Option<TokenKind>> {
@@ -197,6 +184,27 @@ where
             span: (pos, end),
         }))
     }
+}
+
+fn do_parse_num<I>(cursor: &mut Cursor<I>, pos: u32, first: char) -> Result<f64>
+where
+    I: Iterator<Item = char> + Clone,
+{
+        let mut s = String::from(first);
+        loop {
+            let c = cursor.first();
+            match c {
+                Some(c) if c.is_ascii_digit() || c == '.' => {
+                    cursor.next();
+                    s.push(c)
+                }
+                _ => break,
+            }
+        }
+        match s.parse::<f64>() {
+            Ok(n) => Ok(n),
+            Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
+        }
 }
 
 #[test]
