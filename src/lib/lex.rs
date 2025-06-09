@@ -191,12 +191,24 @@ where
     I: Iterator<Item = char> + Clone,
 {
         let mut s = String::from(first);
+        let mut was_e = false;
         loop {
             let c = cursor.first();
             match c {
-                Some(c) if c.is_ascii_digit() || c == '.' => {
+                Some(c@ ('0'..='9' | '.')) => {
                     cursor.next();
-                    s.push(c)
+                    s.push(c);
+                    was_e = false;
+                }
+                Some(c@ ('e' | 'E')) => {
+                    cursor.next();
+                    s.push(c);
+                    was_e = true;
+                }
+                Some(c @ ('+' | '-')) if was_e => {
+                    cursor.next();
+                    s.push(c);
+                    was_e = false;
                 }
                 _ => break,
             }
