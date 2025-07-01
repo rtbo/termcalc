@@ -640,6 +640,39 @@ fn test_sin_pi() {
 }
 
 #[test]
+fn test_parse_multiple_args() {
+    let item: ast::Item = parse_line("func(1, 2, 3)".chars()).unwrap();
+
+    assert_eq!(
+        item,
+        ast::Item {
+            span: (0, 13),
+            kind: ast::ItemKind::Expr(ast::Expr {
+                span: (0, 13),
+                kind: ast::ExprKind::Call {
+                    name_span: (0, 4),
+                    name: "func".to_string(),
+                    args: vec![
+                        ast::Expr {
+                            span: (5, 6),
+                            kind: ast::ExprKind::Num(1.0),
+                        },
+                        ast::Expr {
+                            span: (8, 9),
+                            kind: ast::ExprKind::Num(2.0),
+                        },
+                        ast::Expr {
+                            span: (11, 12),
+                            kind: ast::ExprKind::Num(3.0),
+                        },
+                    ]
+                }
+            })
+        }
+    );
+}
+
+#[test]
 fn fail_test_14_eq_12() {
     assert!(parse_line("14 = 12".chars()).is_err());
 }
