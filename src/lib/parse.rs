@@ -314,7 +314,10 @@ where
                 Some(Token {
                     kind: TokenKind::Comma,
                     ..
-                }) => continue,
+                }) => {
+                    self.bump_token();
+                    continue;
+                }
                 Some(..) => {
                     args.push(self.parse_expr()?);
                 }
