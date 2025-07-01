@@ -92,21 +92,8 @@ where
     }
 
     fn parse_num(&mut self, pos: Pos, first: char) -> Result<f64> {
-        let mut s = String::from(first);
-        loop {
-            let c = self.cursor.first();
-            match c {
-                Some(c) if c.is_ascii_digit() || c == '.' => {
-                    self.cursor.next();
-                    s.push(c)
-                }
-                _ => break,
-            }
-        }
-        match s.parse::<f64>() {
-            Ok(n) => Ok(n),
-            Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
-        }
+        // externalize function for testing
+        do_parse_num(&mut self.cursor, pos, first)
     }
 
     fn next_token_kind(&mut self, pos: Pos) -> Result<Option<TokenKind>> {
@@ -199,93 +186,153 @@ where
     }
 }
 
-#[test]
-fn test_tokenize() {
-    let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars())
-        .map(Result::unwrap)
-        .collect();
-    assert_eq!(
-        tokens,
-        vec![
-            Token {
-                span: (0, 1),
-                kind: TokenKind::Num(1.0),
-            },
-            Token {
-                span: (1, 2),
-                kind: TokenKind::Space,
-            },
-            Token {
-                span: (2, 3),
-                kind: TokenKind::Plus,
-            },
-            Token {
-                span: (3, 4),
-                kind: TokenKind::Space,
-            },
-            Token {
-                span: (4, 5),
-                kind: TokenKind::Num(2.0),
-            },
-            Token {
-                span: (5, 6),
-                kind: TokenKind::Space,
-            },
-            Token {
-                span: (6, 17),
-                kind: TokenKind::Comment(" a comment".to_string()),
-            },
-        ]
-    );
+fn do_parse_num<I>(cursor: &mut Cursor<I>, pos: u32, first: char) -> Result<f64>
+where
+    I: Iterator<Item = char> + Clone,
+{
+        let mut s = String::from(first);
+        let mut was_e = false;
+        loop {
+            let c = cursor.first();
+            match c {
+                Some(c@ ('0'..='9' | '.')) => {
+                    cursor.next();
+                    s.push(c);
+                    was_e = false;
+                }
+                Some(c@ ('e' | 'E')) => {
+                    cursor.next();
+                    s.push(c);
+                    was_e = true;
+                }
+                Some(c @ ('+' | '-')) if was_e => {
+                    cursor.next();
+                    s.push(c);
+                    was_e = false;
+                }
+                _ => break,
+            }
+        }
+        match s.parse::<f64>() {
+            Ok(n) => Ok(n),
+            Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
+        }
 }
 
-#[test]
-fn test_tokenize_in_band() {
-    let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars())
-        .in_band()
-        .map(Result::unwrap)
-        .collect();
-    assert_eq!(
-        tokens,
-        vec![
-            Token {
-                span: (0, 1),
-                kind: TokenKind::Num(1.0),
-            },
-            Token {
-                span: (2, 3),
-                kind: TokenKind::Plus,
-            },
-            Token {
-                span: (4, 5),
-                kind: TokenKind::Num(2.0),
-            },
-        ]
-    );
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_tokenize_sin_pi() {
-    let tokens: Vec<_> = tokenize("sin(pi)".chars()).map(Result::unwrap).collect();
-    assert_eq!(
-        tokens,
-        vec![
-            Token {
-                span: (0, 3),
-                kind: TokenKind::Symbol("sin".to_string()),
-            },
-            Token {
-                span: (3, 4),
-                kind: TokenKind::OpenPar,
-            },
-            Token {
-                span: (4, 6),
-                kind: TokenKind::Symbol("pi".to_string()),
-            },
-            Token {
-                span: (6, 7),
-                kind: TokenKind::ClosePar,
-            },
-        ]
-    );
+    fn parse_number(s: &str) -> Result<f64> {
+        let mut cursor = Cursor::new(s.chars());
+        let first = cursor.next().unwrap(); 
+        do_parse_num(&mut cursor, 0, first)
+    }
+
+    #[test]
+    fn test_parse_num() {
+        assert_eq!(parse_number("123").unwrap(), 123.0);
+        assert_eq!(parse_number("123.456").unwrap(), 123.456);
+        assert_eq!(parse_number(".456").unwrap(), 0.456);
+        assert_eq!(parse_number("1.23e4").unwrap(), 12300.0);
+        assert_eq!(parse_number("1.23e-4").unwrap(), 0.000123);
+        assert_eq!(parse_number("1.23e+4").unwrap(), 12300.0);
+        assert_eq!(parse_number(".456e+4").unwrap(), 4560.0);
+        assert_eq!(parse_number("5e4").unwrap(), 50000.0);
+        assert_eq!(parse_number("12e3").unwrap(), 12000.0);
+        assert_eq!(parse_number("123.").unwrap(), 123.0);
+        assert!(parse_number("123.456.789").is_err());
+        assert!(parse_number("abc").is_err());
+    }
+
+    #[test]
+    fn test_tokenize() {
+        let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars())
+            .map(Result::unwrap)
+            .collect();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    span: (0, 1),
+                    kind: TokenKind::Num(1.0),
+                },
+                Token {
+                    span: (1, 2),
+                    kind: TokenKind::Space,
+                },
+                Token {
+                    span: (2, 3),
+                    kind: TokenKind::Plus,
+                },
+                Token {
+                    span: (3, 4),
+                    kind: TokenKind::Space,
+                },
+                Token {
+                    span: (4, 5),
+                    kind: TokenKind::Num(2.0),
+                },
+                Token {
+                    span: (5, 6),
+                    kind: TokenKind::Space,
+                },
+                Token {
+                    span: (6, 17),
+                    kind: TokenKind::Comment(" a comment".to_string()),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn test_tokenize_in_band() {
+        let tokens: Vec<_> = tokenize("1 + 2 # a comment".chars())
+            .in_band()
+            .map(Result::unwrap)
+            .collect();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    span: (0, 1),
+                    kind: TokenKind::Num(1.0),
+                },
+                Token {
+                    span: (2, 3),
+                    kind: TokenKind::Plus,
+                },
+                Token {
+                    span: (4, 5),
+                    kind: TokenKind::Num(2.0),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn test_tokenize_sin_pi() {
+        let tokens: Vec<_> = tokenize("sin(pi)".chars()).map(Result::unwrap).collect();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    span: (0, 3),
+                    kind: TokenKind::Symbol("sin".to_string()),
+                },
+                Token {
+                    span: (3, 4),
+                    kind: TokenKind::OpenPar,
+                },
+                Token {
+                    span: (4, 6),
+                    kind: TokenKind::Symbol("pi".to_string()),
+                },
+                Token {
+                    span: (6, 7),
+                    kind: TokenKind::ClosePar,
+                },
+            ]
+        );
+    }
 }
