@@ -47,34 +47,39 @@ impl<I: Iterator<Item = char>> Iterator for Cursor<I> {
     }
 }
 
-#[test]
-fn test_cursor() {
-    let mut c = Cursor::new("some string".chars());
-    assert_eq!(c.pos(), 0);
-    assert_eq!(c.next(), Some('s'));
-    assert_eq!(c.next(), Some('o'));
-    assert_eq!(c.next(), Some('m'));
-    assert_eq!(c.next(), Some('e'));
-    assert_eq!(c.pos(), 4);
-    assert_eq!(c.first(), Some(' '));
-    assert_eq!(c.pos(), 4);
-    assert_eq!(c.next(), Some(' '));
-    assert_eq!(c.pos(), 5);
+#[cfg(test)]
+mod tests {
+    use super::Cursor;
 
-    let mut cl = c.clone();
-    assert_eq!(cl.pos(), 5);
-    assert_eq!(cl.next(), Some('s'));
-    assert_eq!(cl.next(), Some('t'));
-    assert_eq!(cl.pos(), 7);
+    #[test]
+    fn test_cursor() {
+        let mut c = Cursor::new("some string".chars());
+        assert_eq!(c.pos(), 0);
+        assert_eq!(c.next(), Some('s'));
+        assert_eq!(c.next(), Some('o'));
+        assert_eq!(c.next(), Some('m'));
+        assert_eq!(c.next(), Some('e'));
+        assert_eq!(c.pos(), 4);
+        assert_eq!(c.first(), Some(' '));
+        assert_eq!(c.pos(), 4);
+        assert_eq!(c.next(), Some(' '));
+        assert_eq!(c.pos(), 5);
 
-    assert_eq!(c.pos(), 5);
-    assert_eq!(c.next(), Some('s'));
-    assert_eq!(c.next(), Some('t'));
-    assert_eq!(c.next(), Some('r'));
-    assert_eq!(c.next(), Some('i'));
-    assert_eq!(c.next(), Some('n'));
-    assert_eq!(c.pos(), 10);
-    assert_eq!(c.next(), Some('g'));
-    assert_eq!(c.pos(), 11);
-    assert_eq!(c.next(), None);
+        let mut cl = c.clone();
+        assert_eq!(cl.pos(), 5);
+        assert_eq!(cl.next(), Some('s'));
+        assert_eq!(cl.next(), Some('t'));
+        assert_eq!(cl.pos(), 7);
+
+        assert_eq!(c.pos(), 5);
+        assert_eq!(c.next(), Some('s'));
+        assert_eq!(c.next(), Some('t'));
+        assert_eq!(c.next(), Some('r'));
+        assert_eq!(c.next(), Some('i'));
+        assert_eq!(c.next(), Some('n'));
+        assert_eq!(c.pos(), 10);
+        assert_eq!(c.next(), Some('g'));
+        assert_eq!(c.pos(), 11);
+        assert_eq!(c.next(), None);
+    }
 }
