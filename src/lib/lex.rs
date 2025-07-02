@@ -190,33 +190,33 @@ fn do_parse_num<I>(cursor: &mut Cursor<I>, pos: u32, first: char) -> Result<f64>
 where
     I: Iterator<Item = char> + Clone,
 {
-        let mut s = String::from(first);
-        let mut was_e = false;
-        loop {
-            let c = cursor.first();
-            match c {
-                Some(c@ ('0'..='9' | '.')) => {
-                    cursor.next();
-                    s.push(c);
-                    was_e = false;
-                }
-                Some(c@ ('e' | 'E')) => {
-                    cursor.next();
-                    s.push(c);
-                    was_e = true;
-                }
-                Some(c @ ('+' | '-')) if was_e => {
-                    cursor.next();
-                    s.push(c);
-                    was_e = false;
-                }
-                _ => break,
+    let mut s = String::from(first);
+    let mut was_e = false;
+    loop {
+        let c = cursor.first();
+        match c {
+            Some(c @ ('0'..='9' | '.')) => {
+                cursor.next();
+                s.push(c);
+                was_e = false;
             }
+            Some(c @ ('e' | 'E')) => {
+                cursor.next();
+                s.push(c);
+                was_e = true;
+            }
+            Some(c @ ('+' | '-')) if was_e => {
+                cursor.next();
+                s.push(c);
+                was_e = false;
+            }
+            _ => break,
         }
-        match s.parse::<f64>() {
-            Ok(n) => Ok(n),
-            Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
-        }
+    }
+    match s.parse::<f64>() {
+        Ok(n) => Ok(n),
+        Err(err) => Err(Error::InvalidNum((pos, pos + s.len() as u32), s, err)),
+    }
 }
 
 #[cfg(test)]
@@ -225,7 +225,7 @@ mod tests {
 
     fn parse_number(s: &str) -> Result<f64> {
         let mut cursor = Cursor::new(s.chars());
-        let first = cursor.next().unwrap(); 
+        let first = cursor.next().unwrap();
         do_parse_num(&mut cursor, 0, first)
     }
 
