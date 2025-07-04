@@ -1,18 +1,13 @@
-name: Linux
+name: Windows
 
 on: push
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
         contents: write
     steps:
-      - name: Install Ubuntu dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y asciidoctor
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -25,22 +20,23 @@ jobs:
       - name: Build & Test
         run: cargo test
 
-      - name: Install cargo-deb
-        if: startsWith(github.ref, 'refs/tags/')
-        run: cargo install cargo-deb
-
-      - name: Build Linux release
+      - name: Get Termcalc Version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          scripts/lin/mk-man.sh
-          cargo build --release
-          scripts/lin/mk-tarball.sh
-          cargo deb
+          cargo install cargo-get
+          echo "TC_VERSION=$(cargo get package.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Upload artifacts
+      - name: Build Windows release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cargo build --release
+          md target/dist
+          cp target/release/tc.exe target/dist/termcalc-${{ env.TC_VERSION }}-x86_64.exe
+
+      - name: Upload Release Executable
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            target/dist/termcalc-*.tar.gz 
-            target/debian/termcalc_*.deb
+            target/dist/termcalc-${{ env.TC_VERSION }}-x86_64.exe
+
